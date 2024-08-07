@@ -2,6 +2,9 @@ from flask import Flask, request
 import whisper
 from llama_cpp import Llama
 import tempfile
+from transformers import VitsModel, AutoTokenizer
+import torch
+import scipy
 
 app = Flask(__name__)
 
@@ -38,7 +41,16 @@ def hello_world():
         text = output["choices"][0]["text"]
         text = text[len(prompt):].strip()
 
-        return text
+        out_tmp_file  = tempfile.NamedTemporaryFile()
+
+
+        inputs = tts_tokenizer(text, return_tensors="pt")
+        with torch.no_grad():
+            output = tts_model(**inputs).waveform
+            scipy.io.wavfile.write(out_tmp_file.name, rate=tts_model.config.sampling_rate, data=output.cpu().float().numpy().transpose())
+
+        with open(out_tmp_file.name, "rb") as f:
+            return f.read()
     except Exception as e:
         print(e)
         return "transcription failed", 500
@@ -52,6 +64,10 @@ def main():
     llm = Llama(
       model_path="./em_german_leo_mistral.Q4_K_M.gguf",
     )
+
+    global tts_model, tts_tokenizer
+    tts_model = VitsModel.from_pretrained("facebook/mms-tts-deu")
+    tts_tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-deu")
 
     app.run(debug=True, host='0.0.0.0', port=8080)
 

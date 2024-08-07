@@ -28,3 +28,14 @@ python3 main.py
 ## German models:
 
 - https://huggingface.co/TheBloke/em_german_leo_mistral-GGUF/blob/main/em_german_leo_mistral.Q4_K_M.gguf
+
+## TTS Solutions:
+
+- suno/bark -> super super slow
+- [mms-tts](https://huggingface.co/facebook/mms-tts-deu) -> ok
+
+## Example:
+
+```sh
+curl -XPOST --data-binary @audio.mp3 localhost:8080/transcribe
+```
