@@ -1,5 +1,16 @@
-import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
-import {Subject} from "rxjs";
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Subject } from "rxjs";
+
+type AssistantResponse = {
+  "timings": {
+    "time_llm": number,
+    "time_tts": number,
+  },
+  "result": {
+    "text": string,
+    "url": string,
+  },
+}
 
 @Component({
   selector: 'app-home',
@@ -51,7 +62,7 @@ export class HomeComponent implements OnInit {
   }
 
   sendAudioFile(audioBlob: Blob) {
-    fetch('http://localhost:8080/transcribe', {
+    fetch('http://localhost:8080/assistant/audio', {
       method: 'POST',
       headers: {
         'Content-Type': 'audio/wav'  // Set the appropriate MIME type
@@ -61,7 +72,7 @@ export class HomeComponent implements OnInit {
     })
       // .then(response => response.json())
       .then(async (data) => {
-        const blob = await data.blob()
+        const response = await data.json() as AssistantResponse
         // this.audioURL = window.URL.createObjectURL(blob);
 
         // optional download
@@ -70,7 +81,7 @@ export class HomeComponent implements OnInit {
         // downloadLink.download = 'recording.wav';
         // downloadLink.click();
 
-        this.audioElement.nativeElement.src = URL.createObjectURL(blob);
+        this.audioElement.nativeElement.src = response.result.url;
         await this.audioElement.nativeElement.play();
       })
       .catch(error => console.error('Error:', error));
