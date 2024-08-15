@@ -3,7 +3,7 @@ from flask_cors import CORS, cross_origin
 import whisper
 from llama_cpp import Llama
 import tempfile
-from transformers import VitsModel, AutoTokenizer
+from transformers import VitsModel, AutoTokenizer, pipeline
 import torch
 import scipy
 import time
@@ -19,7 +19,6 @@ app.config["CORS_HEADERS"] = "Content-Type"
 
 def write_request_to_temp_file(audio: bytes):
     tmp_file = tempfile.NamedTemporaryFile()
-    print(audio)
     tmp_file.write(audio)
     return tmp_file
 
@@ -27,20 +26,12 @@ def write_request_to_temp_file(audio: bytes):
 def speech_to_text(speech: bytes) -> str:
     temp_file = write_request_to_temp_file(speech)
 
-    whisper_result = stt_model.transcribe(temp_file.name, fp16=False)
-    return whisper_result["text"]
-
-
-def text_to_speech(text: str):
-    inputs = tts_tokenizer(text, return_tensors="pt")
-    with torch.no_grad():
-        output = tts_model(**inputs).waveform
-        return output.cpu().float().numpy().transpose()
+    transcription = stt_model(temp_file.name, chunk_length_s=30)
+    return transcription["text"].trim()
 
 
 def generate_llm(system_prompt: str, user_prompt: str) -> str:
     prompt = f"{system_prompt} USER: {user_prompt} ASSISTANT: "
-    print("prompt:", prompt)
 
     output = llm_model(
         prompt,
@@ -52,11 +43,16 @@ def generate_llm(system_prompt: str, user_prompt: str) -> str:
         echo=True,  # Echo the prompt back in the output
     )
 
-    print(output)
-
     text = output["choices"][0]["text"]
     text = text[len(prompt) :].strip().removeprefix("ASSISTANT:").strip()
     return text
+
+
+def text_to_speech(text: str):
+    inputs = tts_tokenizer(text, return_tensors="pt")
+    with torch.no_grad():
+        output = tts_model(**inputs).waveform
+        return output.cpu().float().numpy().transpose()
 
 
 def time_function(f):
@@ -125,6 +121,7 @@ def assistant():
             "time_tts": time_tts,
         },
         "result": {
+            "input_transcription": transcription,
             "text": result_text,
             "url": output_url,
         },
@@ -133,17 +130,16 @@ def assistant():
 
 def main():
     global stt_model
-    stt_model = whisper.load_model("base")
-    print("model 'base' loaded")
+    stt_model = pipeline("automatic-speech-recognition", "./models/stt/whisper-base")
 
     global llm_model
     llm_model = Llama(
-        model_path="./models/em_german_leo_mistral.Q4_K_M.gguf",
+        model_path="./models/llm/em_german_leo_mistral.Q4_K_M.gguf",
     )
 
     global tts_model, tts_tokenizer
-    tts_model = VitsModel.from_pretrained("facebook/mms-tts-deu")
-    tts_tokenizer = AutoTokenizer.from_pretrained("facebook/mms-tts-deu")
+    tts_model = VitsModel.from_pretrained("./models/tts/facebook_mms-tts-deu")
+    tts_tokenizer = AutoTokenizer.from_pretrained("./models/tts/facebook_mms-tts-deu")
 
     app.run(debug=True, host="0.0.0.0", port=8080)
 

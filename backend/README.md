@@ -21,20 +21,30 @@ pip install -r requirements.txt
 python3 main.py
 ```
 
-## English models:
+
+# Models
+
+## Speech to Text
+huggingface-cli download distil-whisper/distil-large-v3-openai
+https://huggingface.co/blog/asr-chunking
+
+## LLM
+
+### English models:
 
 - https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/blob/main/llama-2-7b-chat.Q4_K_M.gguf
 
-## German models:
+### German models:
 
-- https://huggingface.co/TheBloke/em_german_leo_mistral-GGUF/blob/main/em_german_leo_mistral.Q4_K_M.gguf
+- https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/blob/main/llama-2-7b-chat.Q4_K_M.gguf (english)
+- https://huggingface.co/TheBloke/em_german_leo_mistral-GGUF/blob/main/em_german_leo_mistral.Q4_K_M.gguf (german)
 
-## TTS Solutions:
+## Text to Speech
 
 - suno/bark -> super super slow
 - [mms-tts](https://huggingface.co/facebook/mms-tts-deu) -> ok
 
-## Example:
+# Example:
 
 ```sh
 # download the response
