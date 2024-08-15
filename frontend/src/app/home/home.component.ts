@@ -3,10 +3,12 @@ import { Subject } from "rxjs";
 
 type AssistantResponse = {
   "timings": {
+    "time_stt": number,
     "time_llm": number,
     "time_tts": number,
   },
   "result": {
+    "input_transcription": string,
     "text": string,
     "url": string,
   },
