@@ -1,0 +1,35 @@
+/* Individual message styling */
+.message {
+  max-width: 70%;
+  padding: 10px;
+  border-radius: 8px;
+  position: relative;
+  font-size: 14px;
+  line-height: 1.4;
+
+  * {
+    margin: 0;
+  }
+}
+
+/* Received messages */
+.message.received {
+  background-color: #F8F9FA;
+  align-self: flex-start;
+}
+
+/* Sent messages */
+.message.sent {
+  background-color: #212529;
+  color: white;
+  align-self: flex-end;
+}
+
+.telemetry-content {
+  text-align: left;
+}
+
+.form-control:focus {
+  border-color: transparent;
+  box-shadow: none;
+}
