@@ -1,11 +1,12 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import {Observable, ReplaySubject, Subject, tap} from "rxjs";
+import {Observable, ReplaySubject, tap} from "rxjs";
 import {ReactiveFormsModule, UntypedFormControl} from "@angular/forms";
 import {AssistantResponse, BotService} from "../service/bot.service";
 import {AsyncPipe, NgClass, NgForOf, NgIf} from "@angular/common";
 import {AudioService} from "../service/audio.service";
 import {NgbDropdown, NgbDropdownItem, NgbDropdownMenu, NgbDropdownToggle, NgbTooltip} from "@ng-bootstrap/ng-bootstrap";
 import {NgxBootstrapIconsModule} from "ngx-bootstrap-icons";
+import {MenuComponent} from "../components/menu/menu.component";
 
 type MessageType = {
   message: string,
@@ -32,7 +33,8 @@ type MessageType = {
     NgbDropdownToggle,
     NgbDropdownMenu,
     NgbDropdownItem,
-    NgxBootstrapIconsModule
+    NgxBootstrapIconsModule,
+    MenuComponent
   ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
@@ -66,6 +68,27 @@ export class HomeComponent implements OnInit {
         await this.onResponse(res) // TODO ui not updating
       })).subscribe();
     });
+  }
+
+  test() {
+    const text = this.textInput.value;
+
+    this.insertRequest(text);
+
+    this.messages.push({
+      message: '',
+      reply: true,
+      telemetry: null,
+      loading: false
+    });
+
+    this.messages$.next(this.messages)
+
+    this.botService.test(text, (res) => {
+      const lastMessage = this.messages[this.messages.length - 1];
+
+      lastMessage.message += res;
+    })
   }
 
   async startRecording() {

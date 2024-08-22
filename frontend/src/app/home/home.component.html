@@ -1,31 +1,6 @@
 <audio #audio controls hidden></audio>
 <div class="d-flex h-100">
-  <div class="d-flex flex-column flex-shrink-0 p-3 bg-light" style="width: 20vw">
-    <span class="fs-4">ES2 Chatbot</span>
-
-    <hr>
-
-    <div class="mb-3">
-      <label class="form-label text-secondary">Speech-to-text Model</label>
-      <select class="form-select" aria-label="Default select example">
-        <option selected>Whisper</option>
-      </select>
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label text-secondary">LLM</label>
-      <select class="form-select" aria-label="Default select example">
-        <option selected>Mistral</option>
-      </select>
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label text-secondary">Text-to-speech Model</label>
-      <select class="form-select" aria-label="Default select example">
-        <option selected>Facebook TTS</option>
-      </select>
-    </div>
-  </div>
+  <app-menu></app-menu>
   <div class="flex-fill">
     <div class="flex-fill d-flex flex-column h-100">
       <div class="flex-fill overflow-y-auto d-flex flex-column gap-2 p-2 ms-4 me-4 mt-4">
@@ -88,6 +63,10 @@
             [hidden]="!recording"
           >
             <i-bs name="stop-circle"></i-bs>
+          </button>
+          <button type="button"
+                  class="btn btn-dark rounded-3" (click)="test()">
+            Test
           </button>
         </div>
       </form>

@@ -1,0 +1,41 @@
+<div
+  class="d-flex flex-column flex-shrink-0 p-3 bg-light h-100"
+  [style]="{ width: collapsed ? '5vw' : '20vw' }"
+>
+  <div class="d-flex flex-row align-items-center">
+    <span class="fs-4 flex-fill" [hidden]="collapsed">ES2 Chatbot</span>
+
+    <button
+      role="button"
+      class="btn btn-light"
+      (click)="toggleCollapsed()"
+    >
+      <i-bs name="list"></i-bs>
+    </button>
+  </div>
+
+  <form [formGroup]="modelGroup" [hidden]="collapsed">
+    <hr>
+
+    <div class="mb-3">
+      <label class="form-label text-secondary">Speech-to-text Model</label>
+      <select class="form-select" aria-label="Default select example" formControlName="sttSelect">
+        <option *ngFor="let model of SttModel | keyvalue" value="{{ model.value }}">{{ model.key }}</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label text-secondary">LLM</label>
+      <select class="form-select" aria-label="Default select example" formControlName="llmSelect">
+        <option *ngFor="let model of LlmModel | keyvalue" value="{{ model.value }}">{{ model.key }}</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label text-secondary">Text-to-speech Model</label>
+      <select class="form-select" aria-label="Default select example" formControlName="ttsSelect">
+        <option *ngFor="let model of TtsModel | keyvalue" value="{{ model.value }}">{{ model.key }}</option>
+      </select>
+    </div>
+  </form>
+</div>
