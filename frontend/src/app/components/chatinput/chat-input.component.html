@@ -1,0 +1,33 @@
+<form
+  class="d-flex p-4"
+>
+  <div class="flex-fill d-flex flex-row bg-light rounded-4 p-3 w-50 gap-2">
+    <input
+      type="text"
+      class="form-control border-0 bg-light flex-fill"
+      placeholder="Type your message..."
+      [formControl]="textInput"
+    />
+    <button
+      type="button"
+      class="btn btn-dark rounded-3"
+      (click)="sendMessage()"
+    >
+      <i-bs name="send"></i-bs>
+    </button>
+    <button
+      type="button"
+      class="btn btn-dark rounded-3"
+      [hidden]="recording"
+    >
+      <i-bs name="mic"></i-bs>
+    </button>
+    <button
+      type="button"
+      class="btn btn-dark rounded-3"
+      [hidden]="!recording"
+    >
+      <i-bs name="stop-circle"></i-bs>
+    </button>
+  </div>
+</form>

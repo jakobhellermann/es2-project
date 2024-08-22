@@ -1,0 +1,33 @@
+<div class="h-100">
+  <div class="row h-50">
+    <div class="col">
+      <app-chat [prompt]="_prompt"></app-chat>
+    </div>
+    <div class="col">
+      <button [hidden]="activeChats.includes(1)" class="btn btn-light" (click)="addChat(1)">
+        <i-bs name="plus-circle-fill"></i-bs>
+      </button>
+      <app-chat *ngIf="activeChats.includes(1)" [prompt]="_prompt"></app-chat>
+    </div>
+  </div>
+  <div class="row h-50">
+    <div class="col">
+      <button [hidden]="activeChats.includes(2)" class="btn btn-light" (click)="addChat(2)">
+        <i-bs name="plus-circle-fill"></i-bs>
+      </button>
+      <app-chat *ngIf="activeChats.includes(2)" [prompt]="_prompt"></app-chat>
+    </div>
+    <div class="col">
+      <button [hidden]="activeChats.includes(3)" class="btn btn-light" (click)="addChat(3)">
+        <i-bs name="plus-circle-fill"></i-bs>
+      </button>
+      <app-chat *ngIf="activeChats.includes(3)" [prompt]="_prompt"></app-chat>
+    </div>
+  </div>
+
+  <app-chat-input
+    class="position-absolute w-50"
+    style="height: 80px; top: calc(50vh - 40px); left: calc(50vw - 12.5vw)"
+    (sendText)="onSendText($event)"
+  ></app-chat-input>
+</div>

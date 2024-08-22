@@ -18,7 +18,7 @@ export type AssistantResponse = {
 
 export enum SttModel {
   Whisper = 'whisper',
-  Whisper2 = 'whisper2'
+  // Whisper2 = 'whisper2'
 }
 
 export enum LlmModel {

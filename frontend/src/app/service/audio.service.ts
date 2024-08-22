@@ -41,7 +41,7 @@ export class AudioService {
         this.chunks = [];
       };
 
-      this.mediaRecorder.stop();
+      this.mediaRecorder.stop(); // TODO return blob
     }
   }
 

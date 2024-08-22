@@ -1,75 +1,7 @@
 <audio #audio controls hidden></audio>
 <div class="d-flex h-100">
   <app-menu></app-menu>
-  <div class="flex-fill">
-    <div class="flex-fill d-flex flex-column h-100">
-      <div class="flex-fill overflow-y-auto d-flex flex-column gap-2 p-2 ms-4 me-4 mt-4">
-        <div
-          class="message"
-          [ngClass]="{ 'received': message.reply, 'sent': !message.reply }"
-          *ngFor="let message of messages$ | async"
-        >
-          <ng-template #telemetryContent>
-            <div class="telemetry-content">
-              Telemetry Data:
-              <p>Speech-to-text: <b>{{ message.telemetry?.stt }}</b></p>
-              <p>Generate Response: <b>{{ message.telemetry?.llm }}</b></p>
-              <p>Text-to-speech: <b>{{ message.telemetry?.tts }}</b></p>
-            </div>
-          </ng-template>
 
-          <ng-template [ngIf]="!message.reply">
-            <p *ngIf="!message.loading">{{ message.message }}</p>
-            <span *ngIf="message.loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-          </ng-template>
-
-          <ng-template [ngIf]="message.reply">
-            <div [ngbTooltip]="telemetryContent">
-              {{ message.message }}
-            </div>
-          </ng-template>
-        </div>
-      </div>
-      <form class="d-flex flex-row justify-content-center p-4">
-        <div class="d-flex flex-row bg-light rounded-4 p-3 w-50 gap-2">
-          <input
-            type="text"
-            class="form-control border-0 bg-light flex-fill"
-            placeholder="Type your message..."
-            [formControl]="textInput"
-          />
-          <button
-            type="submit"
-            class="btn btn-dark rounded-3"
-            (click)="sendMessage()"
-            (keydown.enter)="sendMessage()"
-            [disabled]="loading || recording || !textInput.value"
-          >
-            <i-bs name="send"></i-bs>
-          </button>
-          <button
-            type="button"
-            class="btn btn-dark rounded-3"
-            (click)="startRecording()"
-            [disabled]="loading"
-            [hidden]="recording"
-          >
-            <i-bs name="mic"></i-bs>
-          </button>
-          <button
-            type="button"
-            class="btn btn-dark rounded-3"
-            (click)="stopRecording()"
-            [hidden]="!recording"
-          >
-            <i-bs name="stop-circle"></i-bs>
-          </button>
-          <button type="button"
-                  class="btn btn-dark rounded-3" (click)="test()">
-            Test
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+<!--  <app-single class="w-100 h-100"></app-single>-->
+  <app-grid class="w-100 h-100"></app-grid>
 </div>
