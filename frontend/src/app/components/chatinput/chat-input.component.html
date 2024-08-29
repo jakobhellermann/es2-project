@@ -1,33 +1,33 @@
 <form
-  class="d-flex p-4"
+  class="d-flex flex-row bg-light rounded-4 gap-2 p-3 m-4"
+  style="height: 10vh"
+  (submit)="sendMessage($event)"
 >
-  <div class="flex-fill d-flex flex-row bg-light rounded-4 p-3 w-50 gap-2">
-    <input
-      type="text"
-      class="form-control border-0 bg-light flex-fill"
-      placeholder="Type your message..."
-      [formControl]="textInput"
-    />
-    <button
-      type="button"
-      class="btn btn-dark rounded-3"
-      (click)="sendMessage()"
-    >
-      <i-bs name="send"></i-bs>
-    </button>
-    <button
-      type="button"
-      class="btn btn-dark rounded-3"
-      [hidden]="recording"
-    >
-      <i-bs name="mic"></i-bs>
-    </button>
-    <button
-      type="button"
-      class="btn btn-dark rounded-3"
-      [hidden]="!recording"
-    >
-      <i-bs name="stop-circle"></i-bs>
-    </button>
-  </div>
+  <input
+    type="text"
+    class="form-control border-0 bg-light flex-fill"
+    placeholder="Type your message..."
+    [formControl]="textInput"
+  />
+  <button
+    type="submit"
+    class="btn btn-dark rounded-3"
+    (click)="sendMessage($event)"
+  >
+    <i-bs name="send"></i-bs>
+  </button>
+  <button
+    type="button"
+    class="btn btn-dark rounded-3"
+    [hidden]="recording"
+  >
+    <i-bs name="mic"></i-bs>
+  </button>
+  <button
+    type="button"
+    class="btn btn-dark rounded-3"
+    [hidden]="!recording"
+  >
+    <i-bs name="stop-circle"></i-bs>
+  </button>
 </form>

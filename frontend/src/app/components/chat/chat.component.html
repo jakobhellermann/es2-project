@@ -1,31 +1,30 @@
-  <div class="flex-fill">
-    <div class="flex-fill d-flex flex-column h-100">
-      <div class="flex-fill overflow-y-auto d-flex flex-column gap-2 p-2 ms-4 me-4 mt-4">
-        <div
-          class="message"
-          [ngClass]="{ 'received': message.reply, 'sent': !message.reply }"
-          *ngFor="let message of messages$ | async"
-        >
-          <ng-template #telemetryContent>
-            <div class="telemetry-content">
-              Telemetry Data:
-              <p>Speech-to-text: <b>{{ message.telemetry?.stt }}</b></p>
-              <p>Generate Response: <b>{{ message.telemetry?.llm }}</b></p>
-              <p>Text-to-speech: <b>{{ message.telemetry?.tts }}</b></p>
-            </div>
-          </ng-template>
-
-          <ng-template [ngIf]="!message.reply">
-            <p *ngIf="!message.loading">{{ message.message }}</p>
-            <span *ngIf="message.loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-          </ng-template>
-
-          <ng-template [ngIf]="message.reply">
-            <div [ngbTooltip]="telemetryContent">
-              {{ message.message }}
-            </div>
-          </ng-template>
-        </div>
+<div
+  class="flex-fill overflow-y-scroll d-flex flex-column gap-2 p-3"
+  style="height: 40vh"
+>
+  <div
+    class="message"
+    [ngClass]="{ 'received': message.reply, 'sent': !message.reply }"
+    *ngFor="let message of messages$ | async"
+  >
+    <ng-template #telemetryContent>
+      <div class="telemetry-content">
+        Telemetry Data:
+        <p>Speech-to-text: <b>{{ message.telemetry?.stt }}</b></p>
+        <p>Generate Response: <b>{{ message.telemetry?.llm }}</b></p>
+        <p>Text-to-speech: <b>{{ message.telemetry?.tts }}</b></p>
       </div>
-    </div>
+    </ng-template>
+
+    <ng-template [ngIf]="!message.reply">
+      <p *ngIf="!message.loading">{{ message.message }}</p>
+      <span *ngIf="message.loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    </ng-template>
+
+    <ng-template [ngIf]="message.reply">
+      <div [ngbTooltip]="telemetryContent">
+        {{ message.message }}
+      </div>
+    </ng-template>
   </div>
+</div>

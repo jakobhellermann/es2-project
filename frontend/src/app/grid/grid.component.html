@@ -1,33 +1,26 @@
-<div class="h-100">
-  <div class="row h-50">
-    <div class="col">
-      <app-chat [prompt]="_prompt"></app-chat>
-    </div>
-    <div class="col">
-      <button [hidden]="activeChats.includes(1)" class="btn btn-light" (click)="addChat(1)">
+<div class="h-100 d-flex flex-column">
+  <div class="row row-cols-2 h-100">
+    <div
+      *ngFor="let index of [0, 1, 2, 3]"
+      class="col d-flex justify-content-center align-items-center h-50 p-0"
+      [ngStyle]="{
+        'border-right': index % 2 === 0 ? '1px solid lightgrey' : '',
+        'border-bottom': index < 2 ? '1px solid lightgrey' : ''
+      }"
+    >
+      <button [hidden]="activeChats.includes(index)" class="btn btn-light" (click)="addChat(index)">
         <i-bs name="plus-circle-fill"></i-bs>
       </button>
-      <app-chat *ngIf="activeChats.includes(1)" [prompt]="_prompt"></app-chat>
-    </div>
-  </div>
-  <div class="row h-50">
-    <div class="col">
-      <button [hidden]="activeChats.includes(2)" class="btn btn-light" (click)="addChat(2)">
-        <i-bs name="plus-circle-fill"></i-bs>
-      </button>
-      <app-chat *ngIf="activeChats.includes(2)" [prompt]="_prompt"></app-chat>
-    </div>
-    <div class="col">
-      <button [hidden]="activeChats.includes(3)" class="btn btn-light" (click)="addChat(3)">
-        <i-bs name="plus-circle-fill"></i-bs>
-      </button>
-      <app-chat *ngIf="activeChats.includes(3)" [prompt]="_prompt"></app-chat>
+      <app-chat
+        *ngIf="activeChats.includes(index)"
+        [prompt]="_prompts[index]"
+        class="w-100 h-100"
+
+      ></app-chat>
     </div>
   </div>
 
   <app-chat-input
-    class="position-absolute w-50"
-    style="height: 80px; top: calc(50vh - 40px); left: calc(50vw - 12.5vw)"
     (sendText)="onSendText($event)"
   ></app-chat-input>
 </div>

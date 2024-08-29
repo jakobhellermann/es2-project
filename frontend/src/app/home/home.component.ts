@@ -1,9 +1,7 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import {Observable, ReplaySubject, tap} from "rxjs";
-import {ReactiveFormsModule, UntypedFormControl} from "@angular/forms";
-import {AssistantResponse, BotService} from "../service/bot.service";
-import {AsyncPipe, NgClass, NgForOf, NgIf} from "@angular/common";
-import {AudioService} from "../service/audio.service";
+import { Component } from '@angular/core';
+import {Observable, ReplaySubject} from "rxjs";
+import {ReactiveFormsModule} from "@angular/forms";
+import {AsyncPipe, NgClass, NgForOf, NgIf, NgSwitch, NgSwitchCase} from "@angular/common";
 import {NgbDropdown, NgbDropdownItem, NgbDropdownMenu, NgbDropdownToggle, NgbTooltip} from "@ng-bootstrap/ng-bootstrap";
 import {NgxBootstrapIconsModule} from "ngx-bootstrap-icons";
 import {MenuComponent} from "../components/menu/menu.component";
@@ -29,12 +27,22 @@ import {SingleComponent} from "../single/single.component";
     MenuComponent,
     GridComponent,
     ChatComponent,
-    SingleComponent
+    SingleComponent,
+    NgSwitchCase,
+    NgSwitch
   ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
 export class HomeComponent {
+  protected viewMode$ = new ReplaySubject<string>();
+  protected _viewMode: Observable<string>;
+
+  constructor() {
+    this.viewMode$.next('single')
+    this._viewMode = this.viewMode$.asObservable()
+  }
+
   /*test() {
     const text = this.textInput.value;
 
@@ -55,4 +63,8 @@ export class HomeComponent {
       lastMessage.message += res;
     })
   }*/
+
+  onViewMode(mode: string) {
+    this.viewMode$.next(mode)
+  }
 }

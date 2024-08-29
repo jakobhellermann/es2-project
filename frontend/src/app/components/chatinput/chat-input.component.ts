@@ -35,7 +35,9 @@ export class ChatInputComponent {
     // this.sendAudio.emit()
   }
 
-  sendMessage() {
+  sendMessage(event: Event) {
+    event.preventDefault()
+
     const text = this.textInput.value;
 
     this.textInput.setValue('');

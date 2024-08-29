@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, EventEmitter, OnInit, Output} from '@angular/core';
 import {FormControl, FormGroup, ReactiveFormsModule} from "@angular/forms";
 import {NgxBootstrapIconsModule} from "ngx-bootstrap-icons";
 import {NgbTooltip} from "@ng-bootstrap/ng-bootstrap";
@@ -19,6 +19,8 @@ import {KeyValuePipe, NgForOf} from "@angular/common";
   styleUrl: './menu.component.css',
 })
 export class MenuComponent implements OnInit {
+  @Output() viewMode = new EventEmitter<string>()
+
   protected readonly SttModel = SttModel;
   protected readonly LlmModel = LlmModel;
   protected readonly TtsModel = TtsModel;
@@ -28,6 +30,7 @@ export class MenuComponent implements OnInit {
     llmSelect: new FormControl<LlmModel>(LlmModel.Mistral),
     ttsSelect: new FormControl<TtsModel>(TtsModel['Facebook TTS']),
   })
+  protected radioControl = new FormControl('single')
 
   protected collapsed: boolean = false;
 
@@ -41,6 +44,14 @@ export class MenuComponent implements OnInit {
         llm_model: values.llmSelect as LlmModel,
         tts_model: values.ttsSelect as TtsModel
       })
+    })
+
+    this.radioControl.valueChanges.subscribe((value) => {
+      if (!value) {
+        return
+      }
+
+      this.viewMode.emit(value)
     })
   }
 
