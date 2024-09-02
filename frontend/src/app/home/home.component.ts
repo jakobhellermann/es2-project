@@ -8,6 +8,7 @@ import {MenuComponent} from "../components/menu/menu.component";
 import {GridComponent} from "../grid/grid.component";
 import {ChatComponent} from "../components/chat/chat.component";
 import {SingleComponent} from "../single/single.component";
+import {defaultModelConfig, LlmModel, ModelConfig, SttModel, TtsModel} from "../service/bot.service";
 
 @Component({
   selector: 'app-home',
@@ -37,10 +38,17 @@ import {SingleComponent} from "../single/single.component";
 export class HomeComponent {
   protected viewMode$ = new ReplaySubject<string>();
   protected _viewMode: Observable<string>;
+  protected config$ = new ReplaySubject<ModelConfig>();
+  protected _config: Observable<ModelConfig>;
+  protected activeConfig$ = new ReplaySubject<ModelConfig>();
+  protected _activeConfig: Observable<ModelConfig>;
 
   constructor() {
     this.viewMode$.next('single')
+    this.config$.next(defaultModelConfig)
     this._viewMode = this.viewMode$.asObservable()
+    this._config = this.config$.asObservable()
+    this._activeConfig = this.activeConfig$.asObservable()
   }
 
   /*test() {
@@ -66,5 +74,14 @@ export class HomeComponent {
 
   onViewMode(mode: string) {
     this.viewMode$.next(mode)
+    this.activeConfig$.next(defaultModelConfig)
+  }
+
+  onConfig(config: ModelConfig) {
+    this.config$.next(config)
+  }
+
+  onActiveConfig(config: ModelConfig) {
+    this.activeConfig$.next(config)
   }
 }

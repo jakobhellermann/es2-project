@@ -3,7 +3,7 @@ import {AsyncPipe, NgClass, NgForOf, NgIf} from "@angular/common";
 import {NgbTooltip} from "@ng-bootstrap/ng-bootstrap";
 import {ReactiveFormsModule} from "@angular/forms";
 import {Observable, ObservableInput, ReplaySubject, tap} from "rxjs";
-import {AssistantResponse, BotService} from "../../service/bot.service";
+import {AssistantResponse, BotService, LlmModel, ModelConfig, SttModel, TtsModel} from "../../service/bot.service";
 import {AudioService} from "../../service/audio.service";
 
 type MessageType = {
@@ -33,11 +33,18 @@ type MessageType = {
 })
 export class ChatComponent implements OnInit {
   @Input() prompt!: Observable<string>
+  @Input() config!: Observable<ModelConfig>
   @ViewChild('audio', { static: false }) audioElement!: ElementRef<HTMLAudioElement>;
 
   private messages: MessageType[] = []
   readonly _messages: Observable<MessageType[]>
   protected messages$ = new ReplaySubject<MessageType[]>()
+
+  private modelConfig: ModelConfig = {
+    stt_model: SttModel.Whisper,
+    llm_model: LlmModel.Mistral,
+    tts_model: TtsModel["Facebook TTS"]
+  }
 
   constructor(private botService: BotService, private audioService: AudioService) {
     this._messages = this.messages$.asObservable();
@@ -47,15 +54,19 @@ export class ChatComponent implements OnInit {
     this.prompt.pipe(tap((prompt) => {
       this.insertRequest(prompt)
 
-      this.botService.sendMessage(prompt).pipe(tap(async (res) => {
+      this.botService.sendMessage(prompt, this.modelConfig).pipe(tap(async (res) => {
         await this.onResponse(res)
       })).subscribe();
+    })).subscribe()
+
+    this.config.pipe(tap((config) => {
+      this.modelConfig = config
     })).subscribe()
 
     this.audioService.getAudioBlob().subscribe(blob => {
       // this.loading = true
 
-      this.botService.sendAudioFile(blob).pipe(tap(async (res) => {
+      this.botService.sendAudioFile(blob, this.modelConfig).pipe(tap(async (res) => {
         const lastMessage = this.messages[this.messages.length - 1];
 
         lastMessage.message = res.result.input_transcription;

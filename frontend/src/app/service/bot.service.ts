@@ -18,7 +18,7 @@ export type AssistantResponse = {
 
 export enum SttModel {
   Whisper = 'whisper',
-  // Whisper2 = 'whisper2'
+  Whisper2 = 'whisper2'
 }
 
 export enum LlmModel {
@@ -29,40 +29,33 @@ export enum TtsModel {
   'Facebook TTS' = 'facebook'
 }
 
-type ModelConfig = {
+export type ModelConfig = {
   stt_model: SttModel,
-  llm_model: string,
-  tts_model: string
+  llm_model: LlmModel,
+  tts_model: TtsModel
+}
+
+export const defaultModelConfig: ModelConfig = {
+  stt_model: SttModel.Whisper,
+  llm_model: LlmModel.Mistral,
+  tts_model: TtsModel["Facebook TTS"]
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class BotService {
-  private modelConfig: ModelConfig = {
-    stt_model: SttModel.Whisper,
-    llm_model: LlmModel.Mistral,
-    tts_model: TtsModel["Facebook TTS"]
-  }
-
   constructor(private httpClient: HttpClient) {
   }
 
-  setModelConfig(config: ModelConfig) {
-    this.modelConfig = config
-  }
-
-  getModelConfig() {
-    return this.modelConfig
-  }
-
-  sendMessage(text: string): Observable<AssistantResponse> {
+  sendMessage(text: string, config: ModelConfig): Observable<AssistantResponse> {
+    console.log(config)
     return this.httpClient.post<AssistantResponse>('http://localhost:8080/assistant/mock', {
       text
     })
   }
 
-  sendAudioFile(audioBlob: Blob): Observable<AssistantResponse> {
+  sendAudioFile(audioBlob: Blob, config: ModelConfig): Observable<AssistantResponse> {
     return this.httpClient.post<AssistantResponse>('http://localhost:8080/assistant/mock', audioBlob, {
       headers: {
         'Content-Type': 'audio/wav'

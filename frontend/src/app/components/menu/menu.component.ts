@@ -1,9 +1,10 @@
-import {Component, EventEmitter, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {FormControl, FormGroup, ReactiveFormsModule} from "@angular/forms";
 import {NgxBootstrapIconsModule} from "ngx-bootstrap-icons";
 import {NgbTooltip} from "@ng-bootstrap/ng-bootstrap";
-import {BotService, LlmModel, SttModel, TtsModel} from "../../service/bot.service";
+import {BotService, LlmModel, ModelConfig, SttModel, TtsModel} from "../../service/bot.service";
 import {KeyValuePipe, NgForOf} from "@angular/common";
+import {config, Observable, tap} from "rxjs";
 
 @Component({
   selector: 'app-menu',
@@ -19,16 +20,18 @@ import {KeyValuePipe, NgForOf} from "@angular/common";
   styleUrl: './menu.component.css',
 })
 export class MenuComponent implements OnInit {
+  @Input() activeConfig!: Observable<ModelConfig>
   @Output() viewMode = new EventEmitter<string>()
+  @Output() config = new EventEmitter<ModelConfig>()
 
   protected readonly SttModel = SttModel;
   protected readonly LlmModel = LlmModel;
   protected readonly TtsModel = TtsModel;
 
   protected modelGroup = new FormGroup({
-    sttSelect: new FormControl<SttModel>(SttModel.Whisper),
-    llmSelect: new FormControl<LlmModel>(LlmModel.Mistral),
-    ttsSelect: new FormControl<TtsModel>(TtsModel['Facebook TTS']),
+    stt_model: new FormControl<SttModel>(SttModel.Whisper),
+    llm_model: new FormControl<LlmModel>(LlmModel.Mistral),
+    tts_model: new FormControl<TtsModel>(TtsModel['Facebook TTS']),
   })
   protected radioControl = new FormControl('single')
 
@@ -39,10 +42,10 @@ export class MenuComponent implements OnInit {
 
   ngOnInit() {
     this.modelGroup.valueChanges.subscribe((values) => {
-      this.botService.setModelConfig({
-        stt_model: values.sttSelect as SttModel,
-        llm_model: values.llmSelect as LlmModel,
-        tts_model: values.ttsSelect as TtsModel
+      this.config.emit({
+          stt_model: values.stt_model as SttModel,
+          llm_model: values.llm_model as LlmModel,
+          tts_model: values.tts_model as TtsModel
       })
     })
 
@@ -53,6 +56,10 @@ export class MenuComponent implements OnInit {
 
       this.viewMode.emit(value)
     })
+
+    this.activeConfig.pipe(tap((config) => {
+      this.modelGroup.setValue(config)
+    })).subscribe()
   }
 
   protected toggleCollapsed() {
