@@ -49,7 +49,7 @@ class LlamaModel:
         )
 
         text = output["choices"][0]["text"]
-        text = text[len(prompt) :].strip().removeprefix("ASSISTANT:").strip()
+        text = text.removeprefix(prompt).strip().removeprefix("ASSISTANT:")
         return text
 
 
