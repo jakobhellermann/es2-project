@@ -47,8 +47,7 @@ https://huggingface.co/blog/asr-chunking
 # Example:
 
 ```sh
-# download the response
-curl -XPOST --data-binary @audio.mp3 localhost:8080/transcribe -o response.wav
-# play the response with ffplay
-curl -XPOST --data-binary @audio.mp3 localhost:8080/transcribe | ffplay -
+curl localhost:8080/models
+curl localhost:8080/assistant/audio -XPOST --data-binary @audio.mp3
+curl localhost:8080/assistant/text -XPOST -H 'Content-Type: application/json' -d '{ "text": "What is your name?" }'
 ```
