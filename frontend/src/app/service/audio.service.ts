@@ -1,18 +1,27 @@
-import {ElementRef, Injectable, ViewChild} from "@angular/core";
-import {Observable, Subject} from "rxjs";
+import {ElementRef, Injectable} from "@angular/core";
+import {Observable, ReplaySubject, tap} from "rxjs";
 
 @Injectable({
   providedIn: 'root'
 })
 export class AudioService {
-  private chunks: any[] = [];
-  private mediaRecorder: any;
-  private audioContext: AudioContext = new AudioContext();
-  private audioBlobSubject = new Subject<Blob>();
-  private audioBlob$ = this.audioBlobSubject.asObservable();
+  protected audioData: any[] = [];
+  protected audioContext: AudioContext = new AudioContext();
+  protected mediaStream: MediaStream | null = null;
+  protected mediaStreamSource: MediaStreamAudioSourceNode | null = null;
+  protected audioWorkletNode: AudioWorkletNode | null = null;
 
-  getAudioBlob(): Observable<Blob> {
-    return this.audioBlob$;
+  protected audioBlob$ = new ReplaySubject<Blob>();
+  protected _audioBlob: Observable<Blob>;
+
+  constructor() {
+    this._audioBlob = this.audioBlob$.asObservable()
+
+    this.setup();
+  }
+
+  audioBlob(): Observable<Blob> {
+    return this._audioBlob;
   }
 
   async playAudio(url: string, el: ElementRef<HTMLAudioElement>) {
@@ -20,83 +29,78 @@ export class AudioService {
     await el.nativeElement.play();
   }
 
-  async startRecording() {
-    if (this.audioContext.state === 'suspended') {
-      await this.audioContext.resume();
-    }
+  async setup() {
+    this.audioContext = new AudioContext();
 
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    this.mediaRecorder = new MediaRecorder(stream);
-    this.mediaRecorder.ondataavailable = (event: any) => this.chunks.push(event.data);
-    this.mediaRecorder.start();
+    await this.audioContext.audioWorklet.addModule('./assets/audio-processor.js')
+    this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
+
+    this.audioWorkletNode.port.onmessage = (event) => {
+      const inputBuffer = event.data;
+      this.audioData.push(...inputBuffer);
+    };
+  }
+
+  async startRecording() {
+    this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    this.mediaStreamSource = this.audioContext.createMediaStreamSource(this.mediaStream!);
+    this.mediaStreamSource!.connect(this.audioWorkletNode!)
   }
 
   async stopRecording() {
-    if (this.mediaRecorder) {
-      this.mediaRecorder.onstop = async () => {
-        const audioData = await new Blob(this.chunks).arrayBuffer();
-        const audioBuffer = await this.audioContext.decodeAudioData(audioData);
-        const wavBlob = this.bufferToWave(audioBuffer, audioBuffer.length);
-        this.audioBlobSubject.next(wavBlob);
-        this.chunks = [];
-      };
+    this.audioWorkletNode!.disconnect();
+    this.mediaStream!.getTracks().forEach(track => track.stop());
 
-      this.mediaRecorder.stop(); // TODO return blob
+    console.log(this.audioData)
+    const audioBuffer = new Float32Array(this.audioData);
+    const wavBlob = this.encodeWAV(audioBuffer);
+    this.audioData = [];
+
+    const blobUrl = URL.createObjectURL(wavBlob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = "aDefaultFileName.txt";
+    link.innerText = "Click here to download the file";
+    document.body.appendChild(link);
+    link.click()
+
+    this.audioBlob$.next(wavBlob);
+  }
+
+  private encodeWAV(samples: Float32Array) {
+    const buffer = new ArrayBuffer(44 + samples.length * 2);
+    const view = new DataView(buffer);
+
+    // Write WAV header
+    this.writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + samples.length * 2, true);
+    this.writeString(view, 8, 'WAVE');
+    this.writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true); // Mono audio
+    view.setUint32(24, 44100, true); // Sample rate
+    view.setUint32(28, 44100 * 2, true); // Byte rate (Sample rate * block align)
+    view.setUint16(32, 2, true); // Block align (bytes per sample * channels)
+    view.setUint16(34, 16, true); // Bits per sample
+    this.writeString(view, 36, 'data');
+    view.setUint32(40, samples.length * 2, true);
+
+    this.floatTo16BitPCM(view, 44, samples);
+
+    return new Blob([view], { type: 'audio/wav' });
+  }
+
+  private writeString(view: DataView, offset: number, string: string) {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
     }
   }
 
-  bufferToWave(abuffer:any, len:number) {
-    let numOfChan = abuffer.numberOfChannels,
-      length = len * numOfChan * 2 + 44,
-      buffer = new ArrayBuffer(length),
-      view = new DataView(buffer),
-      channels = [],
-      i, sample,
-      offset = 0,
-      pos = 0;
-
-    // write WAVE header
-    setUint32(0x46464952);                         // "RIFF"
-    setUint32(length - 8);                         // file length - 8
-    setUint32(0x45564157);                         // "WAVE"
-
-    setUint32(0x20746d66);                         // "fmt " chunk
-    setUint32(16);                                 // length = 16
-    setUint16(1);                                  // PCM (uncompressed)
-    setUint16(numOfChan);
-    setUint32(abuffer.sampleRate);
-    setUint32(abuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
-    setUint16(numOfChan * 2);                      // block-align
-    setUint16(16);                                 // 16-bit (hardcoded in this demo)
-
-    setUint32(0x61746164);                         // "data" - chunk
-    setUint32(length - pos - 8);                   // chunk length
-
-    // write interleaved data
-    for (i = 0; i < abuffer.numberOfChannels; i++)
-      channels.push(abuffer.getChannelData(i));
-
-    while (pos < length) {
-      for (i = 0; i < numOfChan; i++) {             // interleave channels
-        sample = Math.max(-1, Math.min(1, channels[i][offset])); // clamp
-        sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0; // scale to 16-bit signed int
-        view.setInt16(pos, sample, true);          // write 16-bit sample
-        pos += 2;
-      }
-      offset++                                     // next source sample
-    }
-
-    // create Blob
-    return new Blob([buffer], {type: "audio/wav"});
-
-    function setUint16(data: any) {
-      view.setUint16(pos, data, true);
-      pos += 2;
-    }
-
-    function setUint32(data: any) {
-      view.setUint32(pos, data, true);
-      pos += 4;
+  private floatTo16BitPCM(output: DataView, offset: number, input: Float32Array) {
+    for (let i = 0; i < input.length; i++, offset += 2) {
+      const s = Math.max(-1, Math.min(1, input[i]));
+      output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
     }
   }
 }

@@ -5,6 +5,7 @@ import {ChatComponent} from "../components/chat/chat.component";
 import {Observable, ReplaySubject, tap} from "rxjs";
 import {NgForOf, NgIf, NgStyle} from "@angular/common";
 import {defaultModelConfig, LlmModel, ModelConfig, SttModel, TtsModel} from "../service/bot.service";
+import {BotConfigService} from "../service/bot-config.service";
 
 @Component({
   selector: 'app-grid',
@@ -21,56 +22,32 @@ import {defaultModelConfig, LlmModel, ModelConfig, SttModel, TtsModel} from "../
   styleUrl: './grid.component.css'
 })
 export class GridComponent implements OnInit {
-  @Input() config!: Observable<ModelConfig>
-  @Output() activeConfig = new EventEmitter<ModelConfig>()
-
   protected activeChats: number[] = [0];
   protected selectedChat: number = 0;
-  protected prompts$: ReplaySubject<string>[] = [];
-  protected _prompts: Observable<string>[] = [];
 
-  protected configs: ModelConfig[] = []
-  protected configs$ : ReplaySubject<ModelConfig>[] = []
-  protected _configs: Observable<ModelConfig>[] = []
+  protected configs: number[] = []
 
-  constructor() {
-    for (let _ in [0, 1, 2, 3]) {
-      const prompt$ = new ReplaySubject<string>()
-      this.prompts$.push(prompt$);
-      this._prompts.push(prompt$.asObservable())
-
-      const config$ = new ReplaySubject<ModelConfig>()
-      config$.next(defaultModelConfig)
-      this.configs$.push(config$)
-      this._configs.push(config$.asObservable())
-
-      this.configs.push(defaultModelConfig)
-    }
+  constructor(private botConfig: BotConfigService) {
+    this.configs.push(this.botConfig.registerConfig())
   }
 
   ngOnInit() {
-    this.config.pipe(tap((config) => {
+    this.botConfig.activeConfig.pipe(tap((config) => {
       if (this.activeChats.includes(this.selectedChat)) {
-        this.configs[this.selectedChat] = config
-        this.configs$[this.selectedChat].next(config)
+        this.botConfig.setConfig(this.configs[this.selectedChat], config)
       }
     })).subscribe()
   }
 
-  onSendText(text: string) {
-    this.activeChats.forEach((_, key) => {
-      this.prompts$[key].next(text)
-    })
-  }
-
   addChat(index: number) {
     this.activeChats.push(index)
+    this.configs.push(this.botConfig.registerConfig())
   }
 
   selectChat(index: number) {
     if (this.activeChats.includes(index)) {
       this.selectedChat = index
-      this.activeConfig.emit(this.configs[this.selectedChat])
+      this.botConfig.activeConfig = this.botConfig.config(this.configs[index])
     }
   }
 }

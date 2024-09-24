@@ -20,6 +20,7 @@
     type="button"
     class="btn btn-dark rounded-3"
     [hidden]="recording"
+    (click)="startRecording()"
   >
     <i-bs name="mic"></i-bs>
   </button>
@@ -27,6 +28,7 @@
     type="button"
     class="btn btn-dark rounded-3"
     [hidden]="!recording"
+    (click)="stopRecording()"
   >
     <i-bs name="stop-circle"></i-bs>
   </button>

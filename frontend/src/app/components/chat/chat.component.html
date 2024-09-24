@@ -23,7 +23,8 @@
 
     <ng-template [ngIf]="message.reply">
       <div [ngbTooltip]="telemetryContent">
-        {{ message.message }}
+        <p *ngIf="!message.loading">{{ message.message }}</p>
+        <span *ngIf="message.loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
       </div>
     </ng-template>
   </div>

@@ -2,6 +2,7 @@ import {Component, EventEmitter, Output} from '@angular/core';
 import {NgxBootstrapIconsModule} from "ngx-bootstrap-icons";
 import {AudioService} from "../../service/audio.service";
 import {FormControl, ReactiveFormsModule} from "@angular/forms";
+import {BotConfigService} from "../../service/bot-config.service";
 
 @Component({
   selector: 'app-chat-input',
@@ -14,13 +15,10 @@ import {FormControl, ReactiveFormsModule} from "@angular/forms";
   styleUrl: './chat-input.component.css',
 })
 export class ChatInputComponent {
-  @Output() sendText = new EventEmitter<string>()
-  @Output() sendAudio = new EventEmitter<Blob>()
-
   protected textInput = new FormControl();
   protected recording: boolean = false
 
-  constructor(private audioService: AudioService) {
+  constructor(private audioService: AudioService, private botConfig: BotConfigService) {
   }
 
   async startRecording() {
@@ -31,8 +29,6 @@ export class ChatInputComponent {
   async stopRecording() {
     await this.audioService.stopRecording();
     this.recording = false;
-
-    // this.sendAudio.emit()
   }
 
   sendMessage(event: Event) {
@@ -41,6 +37,7 @@ export class ChatInputComponent {
     const text = this.textInput.value;
 
     this.textInput.setValue('');
-    this.sendText.emit(text);
+
+    this.botConfig.broadcastPrompt(text);
   }
 }

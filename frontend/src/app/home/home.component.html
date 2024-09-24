@@ -1,9 +1,9 @@
 <audio #audio controls hidden></audio>
 <div class="d-flex h-100">
-  <app-menu (viewMode)="onViewMode($event)" (config)="onConfig($event)" [activeConfig]="_activeConfig"></app-menu>
+  <app-menu (viewMode)="onViewMode($event)"></app-menu>
 
   <ng-container [ngSwitch]="_viewMode | async">
-    <app-single *ngSwitchCase="'single'" [config]="_config" class="w-100 h-100"></app-single>
-    <app-grid *ngSwitchCase="'grid'" [config]="_config" (activeConfig)="onActiveConfig($event)" class="w-100 h-100"></app-grid>
+    <app-single *ngSwitchCase="'single'" class="w-100 h-100"></app-single>
+    <app-grid *ngSwitchCase="'grid'" class="w-100 h-100"></app-grid>
   </ng-container>
 </div>

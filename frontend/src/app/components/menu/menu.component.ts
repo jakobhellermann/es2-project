@@ -5,6 +5,7 @@ import {NgbTooltip} from "@ng-bootstrap/ng-bootstrap";
 import {BotService, LlmModel, ModelConfig, SttModel, TtsModel} from "../../service/bot.service";
 import {KeyValuePipe, NgForOf} from "@angular/common";
 import {config, Observable, tap} from "rxjs";
+import {BotConfigService} from "../../service/bot-config.service";
 
 @Component({
   selector: 'app-menu',
@@ -20,9 +21,7 @@ import {config, Observable, tap} from "rxjs";
   styleUrl: './menu.component.css',
 })
 export class MenuComponent implements OnInit {
-  @Input() activeConfig!: Observable<ModelConfig>
   @Output() viewMode = new EventEmitter<string>()
-  @Output() config = new EventEmitter<ModelConfig>()
 
   protected readonly SttModel = SttModel;
   protected readonly LlmModel = LlmModel;
@@ -37,12 +36,12 @@ export class MenuComponent implements OnInit {
 
   protected collapsed: boolean = false;
 
-  constructor(private botService: BotService) {
+  constructor(private botConfig: BotConfigService) {
   }
 
   ngOnInit() {
     this.modelGroup.valueChanges.subscribe((values) => {
-      this.config.emit({
+      this.botConfig.setActiveConfig({
           stt_model: values.stt_model as SttModel,
           llm_model: values.llm_model as LlmModel,
           tts_model: values.tts_model as TtsModel
@@ -57,8 +56,8 @@ export class MenuComponent implements OnInit {
       this.viewMode.emit(value)
     })
 
-    this.activeConfig.pipe(tap((config) => {
-      this.modelGroup.setValue(config)
+    this.botConfig.activeConfigId.pipe(tap((config) => {
+      this.modelGroup.setValue(this.botConfig.getConfigObject(config))
     })).subscribe()
   }
 

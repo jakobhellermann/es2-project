@@ -14,15 +14,11 @@
       </button>
       <app-chat
         *ngIf="activeChats.includes(index)"
-        [prompt]="_prompts[index]"
         class="w-100 h-100"
         [ngStyle]="{ 'border': selectedChat === index ? '2px blue solid' : '' }"
-        [config]="_configs[index]"
       ></app-chat>
     </div>
   </div>
 
-  <app-chat-input
-    (sendText)="onSendText($event)"
-  ></app-chat-input>
+  <app-chat-input></app-chat-input>
 </div>
