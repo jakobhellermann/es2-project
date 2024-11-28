@@ -16,40 +16,19 @@ export type AssistantResponse = {
   },
 }
 
-export enum SttModel {
-  Whisper = 'whisper',
-  Whisper2 = 'whisper2'
-}
-
-export enum LlmModel {
-  Mistral = 'mistral'
-}
-
-export enum TtsModel {
-  'Facebook TTS' = 'facebook'
-}
-
 export type ModelConfig = {
-  stt_model: SttModel,
-  llm_model: LlmModel,
-  tts_model: TtsModel
-}
-
-export const defaultModelConfig: ModelConfig = {
-  stt_model: SttModel.Whisper,
-  llm_model: LlmModel.Mistral,
-  tts_model: TtsModel["Facebook TTS"]
+  stt_model: string,
+  llm_model: string,
+  tts_model: string
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class BotService {
-  constructor(private httpClient: HttpClient) {
-  }
+  constructor(private httpClient: HttpClient) {}
 
   sendMessage(text: string, config: ModelConfig): Observable<AssistantResponse> {
-    console.log(config)
     return this.httpClient.post<AssistantResponse>('http://localhost:8080/assistant/mock', {
       text
     })

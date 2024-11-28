@@ -51,7 +51,6 @@ export class AudioService {
     this.audioWorkletNode!.disconnect();
     this.mediaStream!.getTracks().forEach(track => track.stop());
 
-    console.log(this.audioData)
     const audioBuffer = new Float32Array(this.audioData);
     const wavBlob = this.encodeWAV(audioBuffer);
     this.audioData = [];

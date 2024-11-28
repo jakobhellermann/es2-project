@@ -17,7 +17,6 @@ import {BotConfigService} from "../service/bot-config.service";
 })
 export class SingleComponent {
   constructor(private botConfig: BotConfigService) {
-    const configId = this.botConfig.registerConfig()
-    this.botConfig.activeConfig = this.botConfig.config(configId)
+    this.botConfig.getActiveConfigIndex().next(0)
   }
 }

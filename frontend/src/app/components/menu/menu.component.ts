@@ -1,10 +1,9 @@
-import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, OnInit, Output} from '@angular/core';
 import {FormControl, FormGroup, ReactiveFormsModule} from "@angular/forms";
 import {NgxBootstrapIconsModule} from "ngx-bootstrap-icons";
-import {NgbTooltip} from "@ng-bootstrap/ng-bootstrap";
-import {BotService, LlmModel, ModelConfig, SttModel, TtsModel} from "../../service/bot.service";
-import {KeyValuePipe, NgForOf} from "@angular/common";
-import {config, Observable, tap} from "rxjs";
+import {BotService, ModelConfig} from "../../service/bot.service";
+import {NgForOf} from "@angular/common";
+import {tap} from "rxjs";
 import {BotConfigService} from "../../service/bot-config.service";
 
 @Component({
@@ -13,9 +12,7 @@ import {BotConfigService} from "../../service/bot-config.service";
   imports: [
     ReactiveFormsModule,
     NgxBootstrapIconsModule,
-    NgbTooltip,
-    NgForOf,
-    KeyValuePipe
+    NgForOf
   ],
   templateUrl: './menu.component.html',
   styleUrl: './menu.component.css',
@@ -23,29 +20,38 @@ import {BotConfigService} from "../../service/bot-config.service";
 export class MenuComponent implements OnInit {
   @Output() viewMode = new EventEmitter<string>()
 
-  protected readonly SttModel = SttModel;
-  protected readonly LlmModel = LlmModel;
-  protected readonly TtsModel = TtsModel;
-
   protected modelGroup = new FormGroup({
-    stt_model: new FormControl<SttModel>(SttModel.Whisper),
-    llm_model: new FormControl<LlmModel>(LlmModel.Mistral),
-    tts_model: new FormControl<TtsModel>(TtsModel['Facebook TTS']),
+    stt_model: new FormControl<string>('whisper'),
+    llm_model: new FormControl<string>('mistral'),
+    tts_model: new FormControl<string>('facebook-tts'),
   })
   protected radioControl = new FormControl('single')
 
   protected collapsed: boolean = false;
+  protected sttModels: string[] = [];
+  protected llmModels: string[] = [];
+  protected ttsModels: string[] = [];
 
   constructor(private botConfig: BotConfigService) {
+    botConfig.fetchModel().pipe(tap((models) => {
+      this.sttModels = models.stt
+      this.llmModels = models.llm
+      this.ttsModels = models.tts
+
+      const defaultModelConfig = {
+        stt_model: models.stt[0],
+        llm_model: models.llm[0],
+        tts_model: models.tts[0],
+      }
+
+      this.modelGroup.setValue(defaultModelConfig)
+      botConfig.updateAllConfigs(defaultModelConfig)
+    })).subscribe()
   }
 
   ngOnInit() {
     this.modelGroup.valueChanges.subscribe((values) => {
-      this.botConfig.setActiveConfig({
-          stt_model: values.stt_model as SttModel,
-          llm_model: values.llm_model as LlmModel,
-          tts_model: values.tts_model as TtsModel
-      })
+      this.botConfig.updateActiveConfig(values as ModelConfig)
     })
 
     this.radioControl.valueChanges.subscribe((value) => {
@@ -56,8 +62,8 @@ export class MenuComponent implements OnInit {
       this.viewMode.emit(value)
     })
 
-    this.botConfig.activeConfigId.pipe(tap((config) => {
-      this.modelGroup.setValue(this.botConfig.getConfigObject(config))
+    this.botConfig.getActiveConfigIndex().pipe(tap((config) => {
+      this.modelGroup.setValue(this.botConfig.getConfigObject(config), { emitEvent: false })
     })).subscribe()
   }
 

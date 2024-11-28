@@ -1,10 +1,8 @@
-import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {Component} from '@angular/core';
 import {NgxBootstrapIconsModule} from "ngx-bootstrap-icons";
 import {ChatInputComponent} from "../components/chatinput/chat-input.component";
 import {ChatComponent} from "../components/chat/chat.component";
-import {Observable, ReplaySubject, tap} from "rxjs";
 import {NgForOf, NgIf, NgStyle} from "@angular/common";
-import {defaultModelConfig, LlmModel, ModelConfig, SttModel, TtsModel} from "../service/bot.service";
 import {BotConfigService} from "../service/bot-config.service";
 
 @Component({
@@ -21,33 +19,20 @@ import {BotConfigService} from "../service/bot-config.service";
   templateUrl: './grid.component.html',
   styleUrl: './grid.component.css'
 })
-export class GridComponent implements OnInit {
+export class GridComponent {
   protected activeChats: number[] = [0];
   protected selectedChat: number = 0;
 
-  protected configs: number[] = []
-
-  constructor(private botConfig: BotConfigService) {
-    this.configs.push(this.botConfig.registerConfig())
-  }
-
-  ngOnInit() {
-    this.botConfig.activeConfig.pipe(tap((config) => {
-      if (this.activeChats.includes(this.selectedChat)) {
-        this.botConfig.setConfig(this.configs[this.selectedChat], config)
-      }
-    })).subscribe()
-  }
+  constructor(private botConfig: BotConfigService) {}
 
   addChat(index: number) {
     this.activeChats.push(index)
-    this.configs.push(this.botConfig.registerConfig())
   }
 
   selectChat(index: number) {
     if (this.activeChats.includes(index)) {
       this.selectedChat = index
-      this.botConfig.activeConfig = this.botConfig.config(this.configs[index])
+      this.botConfig.getActiveConfigIndex().next(index + 1)
     }
   }
 }

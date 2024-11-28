@@ -20,21 +20,21 @@
     <div class="mb-3">
       <label class="form-label text-secondary">Speech-to-text Model</label>
       <select class="form-select" aria-label="Default select example" formControlName="stt_model">
-        <option *ngFor="let model of SttModel | keyvalue" value="{{ model.value }}">{{ model.key }}</option>
+        <option *ngFor="let model of sttModels" value="{{ model }}">{{ model }}</option>
       </select>
     </div>
 
     <div class="mb-3">
       <label class="form-label text-secondary">LLM</label>
       <select class="form-select" aria-label="Default select example" formControlName="llm_model">
-        <option *ngFor="let model of LlmModel | keyvalue" value="{{ model.value }}">{{ model.key }}</option>
+        <option *ngFor="let model of llmModels" value="{{ model }}">{{ model }}</option>
       </select>
     </div>
 
     <div class="mb-3">
       <label class="form-label text-secondary">Text-to-speech Model</label>
       <select class="form-select" aria-label="Default select example" formControlName="tts_model">
-        <option *ngFor="let model of TtsModel | keyvalue" value="{{ model.value }}">{{ model.key }}</option>
+        <option *ngFor="let model of ttsModels" value="{{ model }}">{{ model }}</option>
       </select>
     </div>
   </form>

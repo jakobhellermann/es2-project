@@ -1,6 +1,13 @@
-import {Observable, ReplaySubject} from "rxjs";
+import {Observable, ReplaySubject, tap} from "rxjs";
 import {Injectable} from "@angular/core";
-import {defaultModelConfig, ModelConfig} from "./bot.service";
+import {ModelConfig} from "./bot.service";
+import {HttpClient} from "@angular/common/http";
+
+type ModelResponse = {
+  llm: string[],
+  stt: string[],
+  tts: string[]
+}
 
 @Injectable({
   providedIn: 'root'
@@ -10,16 +17,40 @@ export class BotConfigService {
   protected _prompts: (Observable<string> | null)[] = [];
   protected configs$: (ReplaySubject<ModelConfig> | null)[] = []
   protected _configs: (Observable<ModelConfig> | null)[] = []
-  protected activeConfig$ = new ReplaySubject<ModelConfig>()
-  protected _activeConfig: Observable<ModelConfig>
-  protected activeConfigId$ = new ReplaySubject<number>()
-  protected _activeConfigId: Observable<number>
+  protected activeConfigIndex$ = new ReplaySubject<number>()
+  protected _activeConfigIndex: Observable<number>
 
   protected configs: ModelConfig[] = [];
+  protected activeConfigIndex: number = -1
 
-  constructor() {
-    this._activeConfig = this.activeConfig$.asObservable()
-    this._activeConfigId = this.activeConfigId$.asObservable()
+  constructor(private httpClient: HttpClient) {
+    for (let i = 0; i <= 5; i++) {
+      const config$ = new ReplaySubject<ModelConfig>()
+      this.configs$.push(config$)
+      this.configs.push({
+        stt_model: '',
+        llm_model: '',
+        tts_model: '',
+      })
+      this._configs.push(config$.asObservable())
+    }
+
+    this._activeConfigIndex = this.activeConfigIndex$.asObservable()
+
+    this.activeConfigIndex$.pipe(tap((index) => {
+      this.activeConfigIndex = index
+    })).subscribe()
+  }
+
+  fetchModel() {
+    return this.httpClient.get<ModelResponse>('http://localhost:8080/models')
+  }
+
+  updateAllConfigs(config: ModelConfig) {
+    this.configs$.forEach((config$, index) => {
+      config$?.next(config)
+      this.configs[index] = config
+    })
   }
 
   registerPrompt() {
@@ -31,19 +62,6 @@ export class BotConfigService {
   unregisterPrompt(id: number) {
     this.prompts$[id] = null;
     this._prompts[id] = null;
-  }
-
-  registerConfig(): number {
-    const config$ = new ReplaySubject<ModelConfig>()
-    config$.next(defaultModelConfig)
-    this.configs$.push(config$)
-    this.configs.push(defaultModelConfig)
-    return this._configs.push(config$.asObservable()) - 1
-  }
-
-  unregisterConfig(id: number) {
-    this.configs$[id] = null;
-    this._configs[id] = null;
   }
 
   prompt(id: number): Observable<string> {
@@ -64,26 +82,18 @@ export class BotConfigService {
 
   setConfig(id: number, config: ModelConfig) {
     this.configs$[id]!.next(config)
-  }
-
-  setActiveConfig(config: ModelConfig) {
-    this.configs$[this._configs.indexOf(this._activeConfig)]!.next(config)
-  }
-
-  get activeConfig(): Observable<ModelConfig> {
-    return this._activeConfig
-  }
-
-  set activeConfig(value: Observable<ModelConfig>) {
-    this._activeConfig = value
-    this.activeConfigId$.next(this._configs.indexOf(this._activeConfig))
-  }
-
-  get activeConfigId(): Observable<number> {
-    return this._activeConfigId
+    this.configs[id] = config
   }
 
   getConfigObject(id: number) {
     return this.configs[id]
+  }
+
+  updateActiveConfig(config: ModelConfig) {
+    this.setConfig(this.activeConfigIndex, config)
+  }
+
+  getActiveConfigIndex() {
+    return this.activeConfigIndex$
   }
 }

@@ -1,9 +1,9 @@
-import {Component, ElementRef, Input, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {AsyncPipe, NgClass, NgForOf, NgIf} from "@angular/common";
 import {NgbTooltip} from "@ng-bootstrap/ng-bootstrap";
 import {ReactiveFormsModule} from "@angular/forms";
-import {Observable, ObservableInput, ReplaySubject, tap} from "rxjs";
-import {AssistantResponse, BotService, LlmModel, ModelConfig, SttModel, TtsModel} from "../../service/bot.service";
+import {Observable, ReplaySubject, tap} from "rxjs";
+import {AssistantResponse, BotService, ModelConfig} from "../../service/bot.service";
 import {AudioService} from "../../service/audio.service";
 import {BotConfigService} from "../../service/bot-config.service";
 
@@ -43,9 +43,9 @@ export class ChatComponent implements OnInit, OnDestroy {
   private loading: boolean = false;
 
   private modelConfig: ModelConfig = {
-    stt_model: SttModel.Whisper,
-    llm_model: LlmModel.Mistral,
-    tts_model: TtsModel["Facebook TTS"]
+    stt_model: 'whisper',
+    llm_model: 'mistral',
+    tts_model: 'facebook-tts'
   }
 
   constructor(private botService: BotService, private audioService: AudioService, private botConfig: BotConfigService) {
