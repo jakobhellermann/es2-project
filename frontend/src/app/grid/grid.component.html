@@ -17,6 +17,7 @@
         *ngIf="activeChats.includes(index)"
         class="w-100 h-100"
         [ngStyle]="{ 'border': selectedChat === index ? '2px blue solid' : '' }"
+        [index]="index + 1"
         (onResponseEvent)="playAudio(index, $event)"
       ></app-chat>
     </div>

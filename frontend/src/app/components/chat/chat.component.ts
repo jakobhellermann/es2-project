@@ -1,4 +1,4 @@
-import {Component, ElementRef, EventEmitter, OnDestroy, OnInit, Output, ViewChild} from '@angular/core';
+import {Component, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angular/core';
 import {AsyncPipe, NgClass, NgForOf, NgIf} from "@angular/common";
 import {NgbTooltip} from "@ng-bootstrap/ng-bootstrap";
 import {ReactiveFormsModule} from "@angular/forms";
@@ -33,6 +33,7 @@ type MessageType = {
   styleUrl: './chat.component.scss'
 })
 export class ChatComponent implements OnInit, OnDestroy {
+  @Input() index = -1
   @Output() onResponseEvent = new EventEmitter<string>()
 
   private readonly promptId: number;
@@ -68,7 +69,7 @@ export class ChatComponent implements OnInit, OnDestroy {
       })).subscribe();
     })).subscribe()
 
-    this.botConfig.config(this.promptId).pipe(tap((config) => {
+    this.botConfig.config(this.index).pipe(tap((config) => {
       this.modelConfig = config
     })).subscribe()
 

@@ -1,6 +1,6 @@
 <div
   class="d-flex flex-column flex-shrink-0 me-3 p-3 bg-light h-100"
-  [style]="{ width: collapsed ? '5vw' : '20vw' }"
+  [style]="{ width: collapsed ? '75px' : '20vw' }"
 >
   <div class="d-flex flex-row align-items-center">
     <span class="fs-4 flex-fill" [hidden]="collapsed">ES2 Chatbot</span>
@@ -14,38 +14,40 @@
     </button>
   </div>
 
-  <form [formGroup]="modelGroup" [hidden]="collapsed">
+  <div [hidden]="collapsed">
+    <form [formGroup]="modelGroup">
+      <hr>
+
+      <div class="mb-3">
+        <label class="form-label text-secondary">Speech-to-text Model</label>
+        <select class="form-select" aria-label="Default select example" formControlName="stt_model">
+          <option *ngFor="let model of sttModels" value="{{ model }}">{{ model }}</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label text-secondary">LLM</label>
+        <select class="form-select" aria-label="Default select example" formControlName="llm_model">
+          <option *ngFor="let model of llmModels" value="{{ model }}">{{ model }}</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label text-secondary">Text-to-speech Model</label>
+        <select class="form-select" aria-label="Default select example" formControlName="tts_model">
+          <option *ngFor="let model of ttsModels" value="{{ model }}">{{ model }}</option>
+        </select>
+      </div>
+    </form>
+
     <hr>
 
-    <div class="mb-3">
-      <label class="form-label text-secondary">Speech-to-text Model</label>
-      <select class="form-select" aria-label="Default select example" formControlName="stt_model">
-        <option *ngFor="let model of sttModels" value="{{ model }}">{{ model }}</option>
-      </select>
+    <div class="btn-group w-100" role="group">
+      <input type="radio" class="btn-check" name="btnradio" id="single" autocomplete="off" value="single" [formControl]="radioControl">
+      <label class="btn btn-outline-primary" for="single">Single</label>
+
+      <input type="radio" class="btn-check" name="btnradio" id="grid" autocomplete="off" value="grid" [formControl]="radioControl">
+      <label class="btn btn-outline-primary" for="grid">Grid</label>
     </div>
-
-    <div class="mb-3">
-      <label class="form-label text-secondary">LLM</label>
-      <select class="form-select" aria-label="Default select example" formControlName="llm_model">
-        <option *ngFor="let model of llmModels" value="{{ model }}">{{ model }}</option>
-      </select>
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label text-secondary">Text-to-speech Model</label>
-      <select class="form-select" aria-label="Default select example" formControlName="tts_model">
-        <option *ngFor="let model of ttsModels" value="{{ model }}">{{ model }}</option>
-      </select>
-    </div>
-  </form>
-
-  <hr>
-
-  <div class="btn-group" role="group">
-    <input type="radio" class="btn-check" name="btnradio" id="single" autocomplete="off" value="single" [formControl]="radioControl">
-    <label class="btn btn-outline-primary" for="single">Single</label>
-
-    <input type="radio" class="btn-check" name="btnradio" id="grid" autocomplete="off" value="grid" [formControl]="radioControl">
-    <label class="btn btn-outline-primary" for="grid">Grid</label>
   </div>
 </div>

@@ -1,5 +1,5 @@
 <div class="w-100 h-100 d-flex flex-column">
   <audio #audioSingle controls hidden></audio>
-  <app-chat class="flex-fill" (onResponseEvent)="playAudio($event)" ></app-chat>
+  <app-chat class="flex-fill" (onResponseEvent)="playAudio($event)" [index]="0"></app-chat>
   <app-chat-input></app-chat-input>
 </div>
