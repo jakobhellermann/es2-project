@@ -1,4 +1,4 @@
-import {Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Component, ElementRef, EventEmitter, OnDestroy, OnInit, Output, ViewChild} from '@angular/core';
 import {AsyncPipe, NgClass, NgForOf, NgIf} from "@angular/common";
 import {NgbTooltip} from "@ng-bootstrap/ng-bootstrap";
 import {ReactiveFormsModule} from "@angular/forms";
@@ -33,7 +33,7 @@ type MessageType = {
   styleUrl: './chat.component.scss'
 })
 export class ChatComponent implements OnInit, OnDestroy {
-  @ViewChild('audio', { static: false }) audioElement!: ElementRef<HTMLAudioElement>;
+  @Output() onResponseEvent = new EventEmitter<string>()
 
   private readonly promptId: number;
   private messages: MessageType[] = []
@@ -101,6 +101,8 @@ export class ChatComponent implements OnInit, OnDestroy {
       llm: `${res.timings.time_llm.toFixed(2)}s`,
     }
 
+    this.onResponseEvent.emit(res.result.url)
+
     if (modify) {
       this.modifyLast(res.result.text, false, telemetry)
       return
@@ -114,8 +116,6 @@ export class ChatComponent implements OnInit, OnDestroy {
     });
 
     this.messages$.next(this.messages)
-
-    // await this.audioService.playAudio(res.result.url, this.audioElement);
   }
 
   private insert(text: string, loading: boolean = false, reply: boolean = false) {
