@@ -18,3 +18,12 @@ huggingface-cli download bartowski/Meta-Llama-3-8B-Instruct-GGUF Meta-Llama-3-8B
 
 # https://huggingface.co/facebook/mms-tts-deu
 huggingface-cli download facebook/mms-tts-deu --local-dir $MODELS_DIR/tts/facebook_mms-tts-deu
+
+# Download piper models
+echo "Downloading piper models"
+mkdir -p $MODELS_DIR/tts/piper
+
+curl -L "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx?download=true" \
+    -o $MODELS_DIR/tts/piper/de_DE-thorsten-medium.onnx
+curl -L "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx.json?download=true.json" \
+    -o $MODELS_DIR/tts/piper/de_DE-thorsten-medium.onnx.json
