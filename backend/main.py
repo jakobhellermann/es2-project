@@ -18,11 +18,14 @@ app.json.ensure_ascii = False
 cors = CORS(app)
 app.config["CORS_HEADERS"] = "Content-Type"
 
+USE_GPU = True
 
 class LlamaModel:
     def __init__(self, model_path):
         self.model = Llama(
             model_path=model_path,
+            n_gpu_layers = -1 if USE_GPU else None,
+            chat_format="llama-2"
         )
 
     def eval(self, system_prompt: str, user_prompt: str) -> str:
