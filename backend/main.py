@@ -7,11 +7,11 @@ import torch
 import scipy
 import time
 import uuid
+import os
 
-base_url = "http://localhost:8080"
 system_prompt = "Du bist ein hilfreicher Assistent. Bitte halte dich kurz und prägnant."
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='frontend')
 app.json.ensure_ascii = False
 cors = CORS(app)
 app.config["CORS_HEADERS"] = "Content-Type"
@@ -106,15 +106,15 @@ def write_audio_to_disk(sampling_rate, audio):
     id = uuid.uuid4()
     out_file = f"data/{id}.wav"
     scipy.io.wavfile.write(out_file, rate=sampling_rate, data=audio)
-    return f"{base_url}/audio/{id}.wav"
+    return f"/api/audio/{id}.wav"
 
 
-@app.route("/audio/<path:path>")
+@app.route("/api/audio/<path:path>")
 def serve_audio_files(path):
     return send_from_directory("data", path)
 
 
-@app.route("/models")
+@app.route("/api/models")
 def available_models():
     return {
         "stt": list(stt_models.keys()),
@@ -123,7 +123,7 @@ def available_models():
     }
 
 
-@app.route("/assistant/text", methods=["POST"])
+@app.route("/api/assistant/text", methods=["POST"])
 def assistant_text():
     request_body = request.json
     if not request_body or "text" not in request_body:
@@ -164,7 +164,7 @@ def assistant_text():
     }
 
 
-@app.route("/assistant/audio", methods=["POST"])
+@app.route("/api/assistant/audio", methods=["POST"])
 def assistant():
     input_audio = request.get_data()
 
@@ -212,6 +212,13 @@ def assistant():
         },
     }
 
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    if path != "" and os.path.exists(app.static_folder + '/' + path):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
 
 def main():
     app.run(debug=True, host="0.0.0.0", port=8080)

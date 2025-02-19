@@ -28,14 +28,14 @@ export class BotService {
   constructor(private httpClient: HttpClient) {}
 
   sendMessage(text: string, config: ModelConfig): Observable<AssistantResponse> {
-    return this.httpClient.post<AssistantResponse>('http://localhost:8080/assistant/text', {
+    return this.httpClient.post<AssistantResponse>('/api/assistant/text', {
       text,
       config
     })
   }
 
   sendAudioFile(audioBlob: Blob, config: ModelConfig): Observable<AssistantResponse> {
-    return this.httpClient.post<AssistantResponse>(`http://localhost:8080/assistant/audio?stt_model=${config.stt_model}&llm_model=${config.llm_model}&tts_model=${config.tts_model}`, audioBlob, {
+    return this.httpClient.post<AssistantResponse>(`/api/assistant/audio?stt_model=${config.stt_model}&llm_model=${config.llm_model}&tts_model=${config.tts_model}`, audioBlob, {
       headers: {
         'Content-Type': 'audio/wav'
       }
