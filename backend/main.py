@@ -1,10 +1,12 @@
 from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 from llama_cpp import Llama
-import tempfile
-from transformers import pipeline
 import time
 import os
+
+from stt import STT
+from stt.pipeline import AutomaticSpeechRecognitionPipeline
+
 from tts.piper import PiperTTS
 from tts.vits import VitsTTS
 from tts import TTS
@@ -15,19 +17,6 @@ app = Flask(__name__, static_folder="frontend")
 app.json.ensure_ascii = False
 cors = CORS(app)
 app.config["CORS_HEADERS"] = "Content-Type"
-
-
-class SpeechToTextModel:
-    def __init__(self):
-        self.model = pipeline(
-            "automatic-speech-recognition", "./models/stt/whisper-base"
-        )
-
-    def speech_to_text(self, speech: bytes) -> str:
-        temp_file = write_request_to_temp_file(speech)
-
-        transcription = self.model(temp_file.name, chunk_length_s=30)
-        return transcription["text"].strip()
 
 
 class LlamaModel:
@@ -62,15 +51,15 @@ llm_models = {
     "llama2-7b-Q4": LlamaModel("./models/llm/llama-2-7b.Q4_K_M.gguf"),
 }
 
-stt_models = {
-    "whisper-base": SpeechToTextModel(),
+stt_models: dict[str, STT] = {
+    "whisper-base": AutomaticSpeechRecognitionPipeline("./models/stt/whisper-base"),
 }
 
 tts_models: dict[str, TTS] = {
-    "facebook_mms-deu": VitsTTS(model = "./models/tts/facebook_mms-tts-deu"),
+    "facebook_mms-deu": VitsTTS(model="./models/tts/facebook_mms-tts-deu"),
     "piper": PiperTTS(
-        model = "./models/tts/piper/de_DE-thorsten-medium.onnx",
-        config = "./models/tts/piper/de_DE-thorsten-medium.onnx.json",
+        model="./models/tts/piper/de_DE-thorsten-medium.onnx",
+        config="./models/tts/piper/de_DE-thorsten-medium.onnx.json",
     ),
 }
 
@@ -78,17 +67,12 @@ end = time.time()
 
 print(f"Load time: {end-start}")
 
-def write_request_to_temp_file(audio: bytes):
-    tmp_file = tempfile.NamedTemporaryFile()
-    tmp_file.write(audio)
-    return tmp_file
-
-
 def time_function(f):
     start = time.time()
     result = f()
     end = time.time()
     return result, end - start
+
 
 @app.route("/api/audio/<path:path>")
 def serve_audio_files(path):
