@@ -2,16 +2,16 @@ from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 from llama_cpp import Llama
 import tempfile
-from transformers import VitsModel, AutoTokenizer, pipeline
-import torch
-import scipy
+from transformers import pipeline
 import time
-import uuid
+import os
+from tts.piper import PiperTTS
+from tts.vits import VitsTTS
+from tts import TTS
 
-base_url = "http://localhost:8080"
 system_prompt = "Du bist ein hilfreicher Assistent. Bitte halte dich kurz und prägnant."
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="frontend")
 app.json.ensure_ascii = False
 cors = CORS(app)
 app.config["CORS_HEADERS"] = "Content-Type"
@@ -41,7 +41,7 @@ class LlamaModel:
 
         output = self.model(
             prompt,
-            max_tokens=20,
+            max_tokens=250,
             stop=[
                 "USER:",
                 "\n",
@@ -53,41 +53,30 @@ class LlamaModel:
         return text
 
 
-class TextToSpeechModel:
-    def __init__(self):
-        self.tts_model = VitsModel.from_pretrained("./models/tts/facebook_mms-tts-deu")
-        self.tts_tokenizer = AutoTokenizer.from_pretrained(
-            "./models/tts/facebook_mms-tts-deu"
-        )
-
-    def text_to_speech(self, text: str):
-        inputs = self.tts_tokenizer(text, return_tensors="pt")
-        with torch.no_grad():
-            output = self.tts_model(**inputs).waveform
-            return output.cpu().float().numpy().transpose()
-
-    @property
-    def sampling_rate(self):
-        return self.tts_model.config.sampling_rate
-
-
 start = time.time()
+
 llm_models = {
     "em_german_leo_mistral-Q4": LlamaModel(
         "./models/llm/em_german_leo_mistral.Q4_K_M.gguf"
     ),
     "llama2-7b-Q4": LlamaModel("./models/llm/llama-2-7b.Q4_K_M.gguf"),
 }
+
 stt_models = {
     "whisper-base": SpeechToTextModel(),
 }
-tts_models = {
-    "facebook_mms-deu": TextToSpeechModel(),
+
+tts_models: dict[str, TTS] = {
+    "facebook_mms-deu": VitsTTS(model = "./models/tts/facebook_mms-tts-deu"),
+    "piper": PiperTTS(
+        model = "./models/tts/piper/de_DE-thorsten-medium.onnx",
+        config = "./models/tts/piper/de_DE-thorsten-medium.onnx.json",
+    ),
 }
+
 end = time.time()
 
 print(f"Load time: {end-start}")
-
 
 def write_request_to_temp_file(audio: bytes):
     tmp_file = tempfile.NamedTemporaryFile()
@@ -101,20 +90,12 @@ def time_function(f):
     end = time.time()
     return result, end - start
 
-
-def write_audio_to_disk(sampling_rate, audio):
-    id = uuid.uuid4()
-    out_file = f"data/{id}.wav"
-    scipy.io.wavfile.write(out_file, rate=sampling_rate, data=audio)
-    return f"{base_url}/audio/{id}.wav"
-
-
-@app.route("/audio/<path:path>")
+@app.route("/api/audio/<path:path>")
 def serve_audio_files(path):
     return send_from_directory("data", path)
 
 
-@app.route("/models")
+@app.route("/api/models")
 def available_models():
     return {
         "stt": list(stt_models.keys()),
@@ -123,7 +104,7 @@ def available_models():
     }
 
 
-@app.route("/assistant/text", methods=["POST"])
+@app.route("/api/assistant/text", methods=["POST"])
 def assistant_text():
     request_body = request.json
     if not request_body or "text" not in request_body:
@@ -145,11 +126,7 @@ def assistant_text():
     result_text, time_llm = time_function(
         lambda: llm_model.eval(system_prompt, user_text)
     )
-    output_audio, time_tts = time_function(
-        lambda: tts_model.text_to_speech(result_text)
-    )
-
-    output_url = write_audio_to_disk(tts_model.sampling_rate, output_audio)
+    speech_file, time_tts = time_function(lambda: tts_model.text_to_speech(result_text))
 
     return {
         "timings": {
@@ -159,12 +136,12 @@ def assistant_text():
         },
         "result": {
             "text": result_text,
-            "url": output_url,
+            "url": f"/api/audio/{speech_file}",
         },
     }
 
 
-@app.route("/assistant/audio", methods=["POST"])
+@app.route("/api/assistant/audio", methods=["POST"])
 def assistant():
     input_audio = request.get_data()
 
@@ -193,11 +170,8 @@ def assistant():
     result_text, time_llm = time_function(
         lambda: llm_model.eval(system_prompt, transcription)
     )
-    output_audio, time_tts = time_function(
-        lambda: tts_model.text_to_speech(result_text)
-    )
 
-    output_url = write_audio_to_disk(tts_model.sampling_rate, output_audio)
+    speech_file, time_tts = time_function(lambda: tts_model.text_to_speech(result_text))
 
     return {
         "timings": {
@@ -208,9 +182,18 @@ def assistant():
         "result": {
             "input_transcription": transcription,
             "text": result_text,
-            "url": output_url,
+            "url": f"/api/audio/{speech_file}",
         },
     }
+
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve(path):
+    if path != "" and os.path.exists(app.static_folder + "/" + path):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, "index.html")
 
 
 def main():

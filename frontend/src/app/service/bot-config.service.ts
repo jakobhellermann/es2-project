@@ -43,7 +43,7 @@ export class BotConfigService {
   }
 
   fetchModel() {
-    return this.httpClient.get<ModelResponse>('http://localhost:8080/models')
+    return this.httpClient.get<ModelResponse>('/api/models')
   }
 
   updateAllConfigs(config: ModelConfig) {

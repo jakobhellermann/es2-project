@@ -1,0 +1,6 @@
+backend/models/
+backend/.venv/
+backend/data/
+
+frontend/dist/
+frontend/node_modules/
