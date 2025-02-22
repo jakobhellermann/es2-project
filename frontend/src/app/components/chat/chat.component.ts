@@ -2,10 +2,11 @@ import {Component, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angula
 import {AsyncPipe, NgClass, NgForOf, NgIf} from "@angular/common";
 import {NgbTooltip} from "@ng-bootstrap/ng-bootstrap";
 import {ReactiveFormsModule} from "@angular/forms";
-import {Observable, ReplaySubject, tap} from "rxjs";
+import {catchError, Observable, ReplaySubject, tap, throwError} from "rxjs";
 import {AssistantResponse, BotService, ModelConfig} from "../../service/bot.service";
 import {AudioService} from "../../service/audio.service";
 import {BotConfigService} from "../../service/bot-config.service";
+import {marked} from "marked";
 
 type MessageType = {
   message: string,
@@ -64,9 +65,15 @@ export class ChatComponent implements OnInit, OnDestroy {
       this.insert(prompt)
       this.insert('', true, true)
 
-      this.botService.sendMessage(prompt, this.modelConfig).pipe(tap(async (res) => {
-        await this.onResponse(res, true)
-      })).subscribe();
+      this.botService.sendMessage(prompt, this.modelConfig)
+        .pipe(catchError(() => {
+          this.loading = false
+          this.modifyLast('Ein Fehler ist aufgetreten. Bitte versuche es noch einmal.', false, {}).then()
+          return throwError(() => new Error('Ein Fehler ist aufgetreten. Bitte versuche es noch einmal.'))
+        }))
+        .subscribe(async (res) => {
+          await this.onResponse(res, true)
+        })
     })).subscribe()
 
     this.botConfig.config(this.index).pipe(tap((config) => {
@@ -81,11 +88,17 @@ export class ChatComponent implements OnInit, OnDestroy {
       this.loading = true;
       this.insert('', true);
 
-      this.botService.sendAudioFile(blob, this.modelConfig).pipe(tap(async (res) => {
-        this.modifyLast(res.result.input_transcription, false)
+      this.botService.sendAudioFile(blob, this.modelConfig)
+        .pipe(catchError(() => {
+          this.loading = false
+          this.modifyLast('Ein Fehler ist aufgetreten. Bitte versuche es noch einmal.', false, {}).then()
+          return throwError(() => new Error('Ein Fehler ist aufgetreten. Bitte versuche es noch einmal.'))
+        }))
+        .subscribe(async (res) => {
+          await this.modifyLast(res?.result.input_transcription, false)
 
-        await this.onResponse(res)
-      })).subscribe();
+          await this.onResponse(res)
+        })
     })).subscribe();
   }
 
@@ -105,7 +118,7 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.onResponseEvent.emit(res.result.url)
 
     if (modify) {
-      this.modifyLast(res.result.text, false, telemetry)
+      await this.modifyLast(res.result.text, false, telemetry)
       return
     }
 
@@ -130,10 +143,10 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.messages$.next(this.messages)
   }
 
-  private modifyLast(message: string, loading: boolean = false, telemetry: any = {}) {
+  private async modifyLast(message: string, loading: boolean = false, telemetry: any = {}) {
     const lastMessage = this.messages[this.messages.length - 1];
 
-    lastMessage.message = message;
+    lastMessage.message = await marked.parse(message);
     lastMessage.loading = loading;
     lastMessage.telemetry = telemetry;
   }

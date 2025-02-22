@@ -22,8 +22,8 @@
     </ng-template>
 
     <ng-template [ngIf]="message.reply">
-      <div [ngbTooltip]="telemetryContent">
-        <p *ngIf="!message.loading">{{ message.message }}</p>
+      <div [ngbTooltip]="message.telemetry?.llm ? telemetryContent : null">
+        <p *ngIf="!message.loading" [innerHTML]="message.message"></p>
         <span *ngIf="message.loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
       </div>
     </ng-template>
