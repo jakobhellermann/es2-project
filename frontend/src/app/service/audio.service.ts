@@ -55,6 +55,14 @@ export class AudioService {
     const wavBlob = this.encodeWAV(audioBuffer);
     this.audioData = [];
 
+    /*const blobUrl = URL.createObjectURL(wavBlob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = "aDefaultFileName.txt";
+    link.innerText = "Click here to download the file";
+    document.body.appendChild(link);
+    link.click();*/
+
     this.audioBlob$.next(wavBlob);
   }
 

@@ -1,19 +1,7 @@
-import {HttpClient} from "@angular/common/http";
-import {Observable} from "rxjs";
+import {Observable, fromEvent} from "rxjs";
+import * as Rx from "rxjs";
 import {Injectable} from "@angular/core";
-
-export type AssistantResponse = {
-  "timings": {
-    "time_stt": number,
-    "time_llm": number,
-    "time_tts": number,
-  },
-  "result": {
-    "input_transcription": string,
-    "text": string,
-    "url": string,
-  },
-}
+import { io, Socket } from "socket.io-client";
 
 export type ModelConfig = {
   stt_model: string,
@@ -21,27 +9,41 @@ export type ModelConfig = {
   tts_model: string
 }
 
+export type ResponseUpdate = {
+  segment: string;
+};
+export type TimedResponse<T = {}> = T & { time: number };
+
 @Injectable({
   providedIn: 'root'
 })
 export class BotService {
-  constructor(private httpClient: HttpClient) {}
+  public stt_finished: Observable<TimedResponse<{transcription: string}>>;
+  public llmUpdate: Observable<ResponseUpdate>;
+  public llmFinished: Observable<TimedResponse>;
+  public ttsFinished: Observable<TimedResponse<{url: string}>>;
 
-  sendMessage(text: string, config: ModelConfig): Observable<AssistantResponse> {
-    const query = new URLSearchParams(config).toString();
+  private socket: Socket;
 
-    return this.httpClient.post<AssistantResponse>(`/api/assistant/text?${query}`, {
-      text,
-    })
+  constructor() {
+    this.socket = io("localhost:8080");
+    this.stt_finished = Rx.fromEvent(this.socket, "response_stt_finished");
+    this.llmUpdate = Rx.fromEvent(this.socket, "response_llm_update");
+    this.llmFinished = Rx.fromEvent(this.socket, "response_llm_finished");
+    this.ttsFinished = Rx.fromEvent(this.socket, "response_tts_finished");
   }
 
-  sendAudioFile(audioBlob: Blob, config: ModelConfig): Observable<AssistantResponse> {
-    const query = new URLSearchParams(config).toString();
+  sendMessage(text: string, config: ModelConfig) {
+    this.socket.emit('send_message', {
+      text,
+      ...config,
+    });
+  }
 
-    return this.httpClient.post<AssistantResponse>(`/api/assistant/audio?${query}`, audioBlob, {
-      headers: {
-        'Content-Type': 'audio/wav'
-      }
-    })
+  sendAudioFile(audio: Blob, config: ModelConfig) {
+    this.socket.emit('send_message', {
+      audio,
+      ...config,
+    });
   }
 }
