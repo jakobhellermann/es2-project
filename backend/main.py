@@ -1,6 +1,8 @@
 from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 from llama_cpp import Llama
+from transformers import pipeline
+import torch
 import time
 import os
 
@@ -44,14 +46,45 @@ class LlamaModel:
         text = text.removeprefix(prompt).strip().removeprefix("ASSISTANT:")
         return text
 
+class TransformersPipelineModel:
+    def __init__(self, model_path):
+        self.pipeline = pipeline(
+            "text-generation",
+            model=model_path,
+            model_kwargs={"torch_dtype": torch.bfloat16},
+            device_map="auto",
+        )
+    def eval(self, system_prompt: str, user_prompt: str):
+        messages = [
+            #{"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+        terminators = [
+            self.pipeline.tokenizer.eos_token_id,
+            self.pipeline.tokenizer.convert_tokens_to_ids("<|eot_id|>")
+        ]
+
+        outputs = self.pipeline(
+            messages,
+            max_new_tokens=200,
+            eos_token_id=terminators,
+            do_sample=True,
+            temperature=0.6,
+            top_p=0.9,
+        )
+        print(outputs)
+        return outputs[0]["generated_text"][-1]["content"]
+
 
 start = time.time()
 
 llm_models = {
-    "em_german_leo_mistral-Q4": LlamaModel(
-        "./models/llm/em_german_leo_mistral.Q4_K_M.gguf"
-    ),
-    "llama2-7b-Q4": LlamaModel("./models/llm/llama-2-7b.Q4_K_M.gguf"),
+    # "em_german_leo_mistral-Q4": LlamaModel("./models/llm/em_german_leo_mistral.Q4_K_M.gguf"),
+    # "llama2-7b-Q4": LlamaModel("./models/llm/llama-2-7b.Q4_K_M.gguf"),
+    "llama3-8b-Q4": LlamaModel("./models/llm/Meta-Llama-3-8B-Instruct-Q4_K_M.gguf"),
+    # "llama-3-8b-transformers": TransformersPipelineModel("meta-llama/Meta-Llama-3-8B-Instruct"),
+    "gemma-2-9b-it": TransformersPipelineModel("./models/llm/gemma-2-9b-it"),
 }
 
 stt_models: dict[str, STT] = {

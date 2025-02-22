@@ -5,3 +5,4 @@ llama-cpp-python
 transformers
 torch
 scipy
+accelerate
