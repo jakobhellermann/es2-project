@@ -1,6 +1,6 @@
 <div
   class="flex-fill overflow-y-scroll d-flex flex-column gap-2 p-3"
-  style="max-height: 40vh"
+  style="max-height: {{ index === 0 ? 'calc(100vh - 123px)' : 'calc(calc(100vh - 124px) / 2)' }}"
 >
   <div
     class="message"
