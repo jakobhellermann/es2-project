@@ -1,27 +1,74 @@
-<div class="h-100 d-flex flex-column">
+<div class="w-100 d-flex flex-column">
   <audio #audioGrid controls hidden></audio>
-  <div class="row row-cols-2 h-100">
-    <div
-      *ngFor="let index of [0, 1, 2, 3]"
-      class="col d-flex justify-content-center align-items-center h-50 p-0"
-      [ngStyle]="{
-        'border-right': index % 2 === 0 ? '1px solid lightgrey' : '',
-        'border-bottom': index < 2 ? '1px solid lightgrey' : ''
-      }"
-      (click)="selectChat(index)"
-    >
-      <button [hidden]="activeChats.includes(index)" class="btn btn-light" (click)="addChat(index)">
-        <i-bs name="plus-circle-fill"></i-bs>
-      </button>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: calc(50dvh - 45px) calc(50dvh - 45px) 90px">
+    <div style="grid-row: 1; grid-column: 1; overflow-y: scroll" class="no-scrollbar" [ngStyle]="{ 'border': selectedChat === 0 ? '1px blue solid' : '' }" (click)="selectChat(0)">
+      <div class="w-100 h-100" style="border-right: 1px solid lightgray; border-bottom: 1px solid lightgray">
+        <app-chat
+          *ngIf="activeChats.includes(0)"
+          style="overflow-y: scroll"
+          class="p-0 m-0"
+          [index]="1"
+          (onResponseEvent)="playAudio(0, $event)"
+        ></app-chat>
+      </div>
+    </div>
+    <div style="grid-row: 1; grid-column: 2; overflow-y: scroll" class="no-scrollbar" [ngStyle]="{ 'border': selectedChat === 1 ? '1px blue solid' : '' }" (click)="selectChat(1)">
+      <ng-container *ngIf="!activeChats.includes(1)">
+        <div class="w-100 h-100 d-flex justify-content-center align-items-center" style="border-bottom: 1px solid lightgray">
+          <button class="btn btn-light" (click)="addChat(1)">
+            <i-bs name="plus-circle-fill"></i-bs>
+          </button>
+        </div>
+      </ng-container>
+      <ng-container *ngIf="activeChats.includes(1)">
+        <div class="w-100 h-100" style="border-bottom: 1px solid lightgray">
+          <app-chat
+            style="overflow-y: scroll"
+            class="p-0 m-0 flex-fill"
+            [index]="2"
+            (onResponseEvent)="playAudio(1, $event)"
+          ></app-chat>
+        </div>
+      </ng-container>
+    </div>
+    <div style="grid-row: 2; grid-column: 1; overflow-y: scroll" class="no-scrollbar" [ngStyle]="{ 'border': selectedChat === 2 ? '1px blue solid' : '' }" (click)="selectChat(2)">
+      <ng-container *ngIf="!activeChats.includes(2)">
+        <div class="w-100 h-100 d-flex justify-content-center align-items-center" style="border-right: 1px solid lightgray">
+          <button class="btn btn-light" (click)="addChat(2)">
+            <i-bs name="plus-circle-fill"></i-bs>
+          </button>
+        </div>
+      </ng-container>
+      <ng-container *ngIf="activeChats.includes(2)">
+        <div class="w-100 h-100" style="border-right: 1px solid lightgray">
+          <app-chat
+            style="overflow-y: scroll"
+            class="p-0 m-0"
+            [index]="3"
+            (onResponseEvent)="playAudio(2, $event)"
+          ></app-chat>
+        </div>
+      </ng-container>
+    </div>
+    <div style="grid-row: 2; grid-column: 2; overflow-y: scroll" class="no-scrollbar" [ngStyle]="{ 'border': selectedChat === 3 ? '1px blue solid' : '' }" (click)="selectChat(3)">
+      <ng-container *ngIf="!activeChats.includes(3)">
+        <div class="w-100 h-100 d-flex justify-content-center align-items-center">
+          <button class="btn btn-light" (click)="addChat(3)">
+            <i-bs name="plus-circle-fill"></i-bs>
+          </button>
+        </div>
+      </ng-container>
       <app-chat
-        *ngIf="activeChats.includes(index)"
-        class="w-100 h-100"
-        [ngStyle]="{ 'border': selectedChat === index ? '2px blue solid' : '' }"
-        [index]="index + 1"
-        (onResponseEvent)="playAudio(index, $event)"
+        *ngIf="activeChats.includes(3)"
+        style="overflow-y: scroll"
+        class="p-0 m-0"
+        [index]="4"
+        (onResponseEvent)="playAudio(3, $event)"
       ></app-chat>
     </div>
-  </div>
 
-  <app-chat-input></app-chat-input>
+    <div style="grid-column: 1 / -1">
+      <app-chat-input></app-chat-input>
+    </div>
+  </div>
 </div>

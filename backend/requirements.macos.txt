@@ -1,0 +1,7 @@
+Flask==3.0.3
+flask_cors
+openai-whisper
+llama-cpp-python -C cmake.args="-DGGML_NATIVE=OFF; -DGGML_CPU_ARM_ARCH=armv8.2-a+dotprod"
+transformers
+torch
+scipy
