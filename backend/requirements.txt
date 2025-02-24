@@ -1,5 +1,6 @@
 Flask==3.0.3
 flask_cors
+flask_socketio
 openai-whisper
 llama-cpp-python
 transformers
