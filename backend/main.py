@@ -50,7 +50,7 @@ class LlamaModel:
         text = text.removeprefix(prompt).strip().removeprefix("ASSISTANT:")
         return text
     
-    def eval_streaming(self, system_prompt: str, user_prompt: str) -> Iterable[str]:
+    def eval(self, system_prompt: str, user_prompt: str) -> Iterable[str]:
         prompt = f"{system_prompt} Q: {user_prompt} A: "
 
         output = self.model(
@@ -93,8 +93,7 @@ class TransformersPipelineModel:
             temperature=0.6,
             top_p=0.9,
         )
-        print(outputs)
-        return outputs[0]["generated_text"][-1]["content"]
+        return [outputs[0]["generated_text"][-1]["content"]]
 
 
 start = time.time()
@@ -184,7 +183,7 @@ def assistant_io(request):
     print(f"Using models llm={llm_model_name} tts={tts_model_name}")
 
     llm_eval_start = time.time()
-    llm_stream = llm_model.eval_streaming(system_prompt, input_text)
+    llm_stream = llm_model.eval(system_prompt, input_text)
     result_text = ""
     for segment in llm_stream:
         result_text += segment
