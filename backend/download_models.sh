@@ -12,7 +12,7 @@ huggingface-cli download openai/whisper-base --local-dir "$MODELS_DIR/stt/whispe
 # https://huggingface.co/TheBloke/em_german_leo_mistral-GGUF
 huggingface-cli download TheBloke/em_german_leo_mistral-GGUF em_german_leo_mistral.Q4_K_M.gguf --local-dir "$MODELS_DIR/llm/"
 # https://huggingface.co/TheBloke/Llama-2-7B-GGUF
-huggingface-cli download TheBloke/Llama-2-7B-GGUF llama-2-7b.Q4_K_M.gguf --local-dir "$MODELS_DIR/llm/"
+huggingface-cli download TheBloke/Llama-2-7B-Chat-GGUF llama-2-7b-chat.Q4_K_M.gguf --local-dir "$MODELS_DIR/llm/"
 # https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF
 huggingface-cli download bartowski/Meta-Llama-3-8B-Instruct-GGUF Meta-Llama-3-8B-Instruct-Q4_K_M.gguf --local-dir "$MODELS_DIR/llm/"
 # huggingface-cli download meta-llama/Meta-Llama-3-8B-Instruct --local-dir "$MODELS_DIR/llm/"
