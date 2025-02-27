@@ -7,9 +7,9 @@
     <ng-template #telemetryContent>
       <div class="telemetry-content">
         Telemetry Data:
-        <p>Speech-to-text: <b>{{ message.telemetry?.stt }}</b></p>
-        <p>Generate Response: <b>{{ message.telemetry?.llm }}</b></p>
-        <p>Text-to-speech: <b>{{ message.telemetry?.tts }}</b></p>
+        <p>Speech-to-text: <b>{{ message.telemetry.stt }}</b></p>
+        <p>Generate Response: <b>{{ message.telemetry.llm }}</b></p>
+        <p>Text-to-speech: <b>{{ message.telemetry.tts }}</b></p>
       </div>
     </ng-template>
 
@@ -19,7 +19,7 @@
     </ng-template>
 
     <ng-template [ngIf]="message.reply">
-      <div [ngbTooltip]="message.telemetry?.llm ? telemetryContent : null">
+      <div [ngbTooltip]="message.telemetry.llm ? telemetryContent : null">
         <p *ngIf="!message.loading" [innerHTML]="message.message"></p>
         <span *ngIf="message.loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
       </div>
