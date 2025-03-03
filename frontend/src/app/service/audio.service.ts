@@ -14,10 +14,20 @@ export class AudioService {
   protected audioBlob$ = new ReplaySubject<Blob>();
   protected _audioBlob: Observable<Blob>;
 
+  private autoPlayEnable: boolean = true
+
   constructor() {
     this._audioBlob = this.audioBlob$.asObservable()
 
     this.setup();
+  }
+
+  public toggleAutoPlay(autoPlay: boolean) {
+    this.autoPlayEnable = autoPlay
+  }
+
+  public isAutoPlayEnabled() {
+    return this.autoPlayEnable
   }
 
   audioBlob(): Observable<Blob> {

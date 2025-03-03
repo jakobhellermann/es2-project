@@ -1,4 +1,5 @@
 <div class="flex-fill d-flex flex-column gap-2 p-3 h-100">
+  <audio #audioElement controls hidden></audio>
   <div
     class="message"
     [ngClass]="{ 'received': message.reply, 'sent': !message.reply }"
@@ -19,7 +20,26 @@
     </ng-template>
 
     <ng-template [ngIf]="message.reply">
-      <div [ngbTooltip]="message.telemetry.llm ? telemetryContent : null">
+      <div [ngbTooltip]="message.telemetry.llm ? telemetryContent : null" class="d-flex flex-row gap-2">
+        <ng-template [ngIf]="!!message.url" [ngIfElse]="ttsLoading">
+          <button
+            class="btn btn-sm btn-light"
+            style="width: 32px; height: 32px"
+            (click)="onPlayAudio(message)"
+          >
+            <ng-template [ngIf]="!message.playing" [ngIfElse]="pause">
+              <i-bs name="play-fill"></i-bs>
+            </ng-template>
+            <ng-template #pause>
+              <i-bs name="pause-fill"></i-bs>
+            </ng-template>
+          </button>
+        </ng-template>
+        <ng-template #ttsLoading>
+          <div style="width: 32px; height: 32px" class="d-flex justify-content-center align-items-center">
+            <span class="spinner-border spinner-border-sm"></span>
+          </div>
+        </ng-template>
         <p *ngIf="!message.loading" [innerHTML]="message.message"></p>
         <span *ngIf="message.loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
       </div>

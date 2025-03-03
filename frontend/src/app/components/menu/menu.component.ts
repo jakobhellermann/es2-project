@@ -5,6 +5,7 @@ import {BotService, ModelConfig} from "../../service/bot.service";
 import {NgForOf} from "@angular/common";
 import {tap} from "rxjs";
 import {BotConfigService} from "../../service/bot-config.service";
+import {AudioService} from "../../service/audio.service";
 
 @Component({
   selector: 'app-menu',
@@ -26,13 +27,14 @@ export class MenuComponent implements OnInit {
     tts_model: new FormControl<string>('facebook-tts'),
   })
   protected radioControl = new FormControl('single')
+  protected autoPlay = new FormControl('autoPlay')
 
   protected collapsed: boolean = false;
   protected sttModels: string[] = [];
   protected llmModels: string[] = [];
   protected ttsModels: string[] = [];
 
-  constructor(private botConfig: BotConfigService) {
+  constructor(private botConfig: BotConfigService, private audioService: AudioService) {
     botConfig.fetchModel().pipe(tap((models) => {
       this.sttModels = models.stt
       this.llmModels = models.llm
@@ -60,6 +62,11 @@ export class MenuComponent implements OnInit {
       }
 
       this.viewMode.emit(value)
+    })
+
+    this.autoPlay.valueChanges.subscribe((value) => {
+      // @ts-ignore
+      this.audioService.toggleAutoPlay(value)
     })
 
     this.botConfig.getActiveConfigIndex().pipe(tap((config) => {

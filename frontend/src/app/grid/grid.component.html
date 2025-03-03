@@ -8,6 +8,7 @@
           style="overflow-y: scroll"
           class="p-0 m-0"
           [index]="1"
+          [isSelected]="selectedChat === 0"
           (onResponseEvent)="playAudio(0, $event)"
         ></app-chat>
       </div>
@@ -26,6 +27,7 @@
             style="overflow-y: scroll"
             class="p-0 m-0 flex-fill"
             [index]="2"
+            [isSelected]="selectedChat === 1"
             (onResponseEvent)="playAudio(1, $event)"
           ></app-chat>
         </div>
@@ -45,6 +47,7 @@
             style="overflow-y: scroll"
             class="p-0 m-0"
             [index]="3"
+            [isSelected]="selectedChat === 2"
             (onResponseEvent)="playAudio(2, $event)"
           ></app-chat>
         </div>
@@ -63,6 +66,7 @@
         style="overflow-y: scroll"
         class="p-0 m-0"
         [index]="4"
+        [isSelected]="selectedChat === 3"
         (onResponseEvent)="playAudio(3, $event)"
       ></app-chat>
     </div>

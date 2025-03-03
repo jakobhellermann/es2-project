@@ -1,17 +1,22 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import {Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild} from '@angular/core';
 import { AsyncPipe, NgClass, NgForOf, NgIf } from "@angular/common";
 import { NgbTooltip } from "@ng-bootstrap/ng-bootstrap";
 import { ReactiveFormsModule } from "@angular/forms";
-import { catchError, Observable, ReplaySubject, tap, throwError } from "rxjs";
+import { Observable, ReplaySubject, tap } from "rxjs";
 import { BotService, ModelConfig, ResponseUpdate, TimedResponse } from "../../service/bot.service";
 import { AudioService } from "../../service/audio.service";
 import { BotConfigService } from "../../service/bot-config.service";
 import { marked } from "marked";
+import {io, Socket} from "socket.io-client";
+import * as Rx from "rxjs";
+import {NgxBootstrapIconsModule} from "ngx-bootstrap-icons";
 
 type MessageType = {
   message: string,
   reply: boolean,
   loading: boolean,
+  url: string | null,
+  playing: boolean,
   telemetry: {
     stt?: string,
     tts?: string,
@@ -28,14 +33,24 @@ type MessageType = {
     ReactiveFormsModule,
     NgClass,
     NgForOf,
-    AsyncPipe
+    AsyncPipe,
+    NgxBootstrapIconsModule
   ],
   templateUrl: './chat.component.html',
   styleUrl: './chat.component.scss'
 })
 export class ChatComponent implements OnInit, OnDestroy {
+  @ViewChild('audioElement', { static: false }) audioElement!: ElementRef<HTMLAudioElement>;
+
   @Input() index = -1;
+  @Input() isSelected = false;
   @Output() onResponseEvent = new EventEmitter<string>();
+
+  private socket: Socket;
+  private stt_finished: Observable<TimedResponse<{transcription: string}>>;
+  private llmUpdate: Observable<ResponseUpdate>;
+  private llmFinished: Observable<TimedResponse>;
+  private ttsFinished: Observable<TimedResponse<{url: string}>>;
 
   private readonly promptId: number;
   private messages: MessageType[] = [];
@@ -53,14 +68,20 @@ export class ChatComponent implements OnInit, OnDestroy {
   constructor(private botService: BotService, private audioService: AudioService, private botConfig: BotConfigService) {
     this._messages = this.messages$.asObservable();
     this.promptId = botConfig.registerPrompt();
+
+    this.socket = io("localhost:8080");
+    this.stt_finished = Rx.fromEvent(this.socket, "response_stt_finished");
+    this.llmUpdate = Rx.fromEvent(this.socket, "response_llm_update");
+    this.llmFinished = Rx.fromEvent(this.socket, "response_llm_finished");
+    this.ttsFinished = Rx.fromEvent(this.socket, "response_tts_finished");
+
+    this.stt_finished.subscribe(this.onSTTFinished.bind(this))
+    this.llmUpdate.subscribe(this.onLLMUpdate.bind(this))
+    this.llmFinished.subscribe(this.onLLMFinished.bind(this))
+    this.ttsFinished.subscribe(this.onTTSFinished.bind(this))
   }
 
   ngOnInit() {
-    this.botService.stt_finished.subscribe(this.onSTTFinished.bind(this));
-    this.botService.llmUpdate.subscribe(this.onLLMUpdate.bind(this));
-    this.botService.llmFinished.subscribe(this.onLLMFinished.bind(this));
-    this.botService.ttsFinished.subscribe(this.onTTSFinished.bind(this));
-
     this.botConfig.prompt(this.promptId).pipe(tap((prompt) => {
       if (this.loading) {
         return;
@@ -69,18 +90,8 @@ export class ChatComponent implements OnInit, OnDestroy {
       this.loading = true;
       this.insert(prompt);
 
-      /*this.botService.sendMessage(prompt, this.modelConfig)
-        .pipe(catchError(() => {
-          this.loading = false
-          this.modifyLast('Ein Fehler ist aufgetreten. Bitte versuche es noch einmal.', false, {}).then()
-          return throwError(() => new Error('Ein Fehler ist aufgetreten. Bitte versuche es noch einmal.'))
-        }))
-        .subscribe(async (res) => {
-          await this.onResponse(res, true)
-        })*/
-
       this.insert('', false, true);
-      this.botService.sendMessage(prompt, this.modelConfig);
+      this.botService.sendMessage(this.socket, prompt, this.modelConfig);
     })).subscribe();
 
     this.botConfig.config(this.index).pipe(tap((config) => {
@@ -95,7 +106,7 @@ export class ChatComponent implements OnInit, OnDestroy {
       this.loading = true;
       this.insert('', true);
 
-      this.botService.sendAudioFile(blob, this.modelConfig);
+      this.botService.sendAudioFile(this.socket, blob, this.modelConfig);
     })).subscribe();
   }
 
@@ -125,10 +136,23 @@ export class ChatComponent implements OnInit, OnDestroy {
     last.message = await marked.parse(last.message);
   }
   private onTTSFinished(res: TimedResponse<{ url: string; }>) {
-    this.onResponseEvent.emit(res.url);
-
     let last = this.lastMessage();
+    last.url = res.url;
     last.telemetry.tts = `${res.time.toFixed(2)}s`;
+
+    if (this.isSelected && this.audioService.isAutoPlayEnabled()) {
+      last.playing = true
+      this.audioElement.nativeElement.onended = () => { last.playing = false }
+      this.audioService.playAudio(res.url, this.audioElement);
+    }
+  }
+
+  protected onPlayAudio(message: MessageType) {
+    message.playing = true
+    if (message.url) {
+      this.audioElement.nativeElement.onended = () => { message.playing = false }
+      this.audioService.playAudio(message.url, this.audioElement);
+    }
   }
 
   private insert(text: string, loading: boolean = false, reply: boolean = false): MessageType {
@@ -136,7 +160,9 @@ export class ChatComponent implements OnInit, OnDestroy {
       message: text,
       reply,
       telemetry: {},
-      loading
+      loading,
+      url: null,
+      playing: false
     };
     this.messages.push(message);
     this.messages$.next(this.messages);
