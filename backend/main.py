@@ -110,9 +110,13 @@ stt_models: dict[str, STT] = {
 }
 
 tts_models: dict[str, TTS] = {
-    "piper": PiperTTS(
-        model="./models/tts/piper/de_DE-thorsten-medium.onnx",
-        config="./models/tts/piper/de_DE-thorsten-medium.onnx.json",
+    "piper-thorsten": PiperTTS(
+        model="models/tts/piper/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx",
+        config="models/tts/piper/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx.json",
+    ),
+    "piper-eva": PiperTTS(
+        model="models/tts/piper/de/de_DE/eva_k/x_low/de_DE-eva_k-x_low.onnx",
+        config="models/tts/piper/de/de_DE/eva_k/x_low/de_DE-eva_k-x_low.onnx.json",
     ),
     "facebook_mms-deu": VitsTTS(model="./models/tts/facebook_mms-tts-deu"),
 }

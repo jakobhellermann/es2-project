@@ -29,11 +29,10 @@ huggingface-cli download microsoft/phi-2 --local-dir "$MODELS_DIR/llm/phi-2"
 # https://huggingface.co/facebook/mms-tts-deu
 huggingface-cli download facebook/mms-tts-deu --local-dir "$MODELS_DIR/tts/facebook_mms-tts-deu"
 
-# Download piper models
-echo "Downloading piper models"
-mkdir -p "$MODELS_DIR/tts/piper"
-
-test -f "$MODELS_DIR/tts/piper/de_DE-thorsten-medium.onnx" || curl -sL "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx?download=true" \
-    -o "$MODELS_DIR/tts/piper/de_DE-thorsten-medium.onnx"
-test -f "$MODELS_DIR/tts/piper/de_DE-thorsten-medium.onnx.json" || curl -sL "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx.json?download=true.json" \
-    -o "$MODELS_DIR/tts/piper/de_DE-thorsten-medium.onnx.json"
+function download_piper_voice {
+	voice=$1; quality=$2
+	huggingface-cli download --local-dir "$MODELS_DIR/tts/piper" rhasspy/piper-voices \
+		de/de_DE/$voice/$quality/de_DE-$voice-$quality.onnx de/de_DE/$voice/$quality/de_DE-$voice-$quality.onnx.json
+}
+download_piper_voice eva_k x_low
+download_piper_voice thorsten medium
