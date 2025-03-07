@@ -56,14 +56,11 @@ class LlamaModel:
         output = self.model(
             prompt,
             max_tokens=None,
-            stop=[
-                "Q:",
-                "\n",
-            ],
+            stop=["Q:"],
             stream=True,
         )
 
-        # text = output["choices"][0]["text"]
+        # return output["choices"][0]["text"]
         return map(lambda segment: segment["choices"][0]["text"], output)
 
 class TransformersPipelineModel:
