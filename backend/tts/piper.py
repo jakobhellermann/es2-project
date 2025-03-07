@@ -3,6 +3,7 @@ import uuid
 import subprocess
 from tts import TTS
 
+
 class PiperTTS(TTS):
     def __init__(self, model: str, config: str):
         self.__model = model

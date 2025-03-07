@@ -3,7 +3,13 @@ from flask import Flask, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from llama_cpp import Llama
-from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer, PreTrainedModel, PreTrainedTokenizer
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    TextIteratorStreamer,
+    PreTrainedModel,
+    PreTrainedTokenizer,
+)
 import threading
 import torch
 import time
@@ -23,16 +29,17 @@ app.json.ensure_ascii = False
 cors = CORS(app)
 app.config["CORS_HEADERS"] = "Content-Type"
 
-socketio = SocketIO(app,debug=True, cors_allowed_origins='*', async_mode="eventlet")
+socketio = SocketIO(app, debug=True, cors_allowed_origins="*", async_mode="eventlet")
 
 USE_GPU = True
 MAX_TOKENS = None
+
 
 class LlamaModel:
     def __init__(self, model_path):
         self.model = Llama(
             model_path=model_path,
-            n_gpu_layers = -1 if USE_GPU else None,
+            n_gpu_layers=-1 if USE_GPU else None,
             # verbose = False,
         )
 
@@ -51,7 +58,7 @@ class LlamaModel:
         text = output["choices"][0]["text"]
         text = text.removeprefix(prompt).strip().removeprefix("ASSISTANT:")
         return text
-    
+
     def eval(self, system_prompt: str, user_prompt: str) -> Iterable[str]:
         prompt = f"{system_prompt} Q: {user_prompt} A: "
 
@@ -65,19 +72,25 @@ class LlamaModel:
         # return output["choices"][0]["text"]
         return map(lambda segment: segment["choices"][0]["text"], output)
 
+
 class TransformersModel:
     tokenizer: PreTrainedTokenizer
     model: PreTrainedModel
 
     def __init__(self, model_path):
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype = torch.bfloat16)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_path, torch_dtype=torch.bfloat16
+        )
+
     def eval(self, system_prompt: str, user_prompt: str):
         messages = [
             # {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
-        tokenized_chat = self.tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True, return_tensors="pt")
+        tokenized_chat = self.tokenizer.apply_chat_template(
+            messages, tokenize=True, add_generation_prompt=True, return_tensors="pt"
+        )
 
         streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True)
         thread = threading.Thread(
@@ -89,7 +102,7 @@ class TransformersModel:
                 "do_sample": True,
                 "temperature": 0.8,
                 "top_p": 0.9,
-            }
+            },
         )
         thread.start()
         return streamer
@@ -102,7 +115,6 @@ llm_models = {
     # "llama2-7b-Q4": LlamaModel("./models/llm/llama-2-7b-chat.Q4_K_M.gguf"),
     "llama3-8b-Q4": LlamaModel("./models/llm/Meta-Llama-3-8B-Instruct-Q4_K_M.gguf"),
     "phi-3": LlamaModel("models/llm/Phi-3-mini-4k-instruct-q4.gguf"),
-
     # "llama-3-8b-transformers": TransformersModel("meta-llama/Meta-Llama-3-8B-Instruct"),
     # "gemma-2-9b-it": TransformersPipelineModel("./models/llm/gemma-2-9b-it"),
 }
@@ -125,7 +137,8 @@ tts_models: dict[str, TTS] = {
 
 end = time.time()
 
-print(f"Load time: {end-start}")
+print(f"Load time: {end - start}")
+
 
 def time_function(f):
     start = time.time()
@@ -147,14 +160,17 @@ def available_models():
         "tts": list(tts_models.keys()),
     }
 
+
 @socketio.on("send_message")
 def assistant_io(request):
     input_text = request.get("text")
     input_audio = request.get("audio")
 
     match (input_text, input_audio):
-        case (None, None): raise Exception("400")
-        case (a, b) if a != None and b != None: raise Exception("400")
+        case (None, None):
+            raise Exception("400")
+        case (a, b) if a != None and b != None:
+            raise Exception("400")
 
     stt_model_name = request["stt_model"]
     if input_audio:
@@ -166,7 +182,7 @@ def assistant_io(request):
         input_text, time_stt = time_function(
             lambda: stt_model.speech_to_text(input_audio)
         )
-        emit("response_stt_finished", { "time": time_stt, "transcription": input_text })
+        emit("response_stt_finished", {"time": time_stt, "transcription": input_text})
 
     llm_model_name = request.get("llm_model", next(iter(llm_models)))
     if llm_model_name not in llm_models:
@@ -185,19 +201,21 @@ def assistant_io(request):
     result_text = ""
     for segment in llm_stream:
         result_text += segment
-        print(segment, end = "", flush=True)
-        emit('response_llm_update', { "segment": segment })
+        print(segment, end="", flush=True)
+        emit("response_llm_update", {"segment": segment})
         socketio.sleep(0)
     llm_eval_time = time.time() - llm_eval_start
-    emit('response_llm_finished', {
-        "time": llm_eval_time
-    })
+    emit("response_llm_finished", {"time": llm_eval_time})
 
     speech_file, time_tts = time_function(lambda: tts_model.text_to_speech(result_text))
-    emit('response_tts_finished', {
-        "time": time_tts,
-        "url": f"/api/audio/{speech_file}",
-    })
+    emit(
+        "response_tts_finished",
+        {
+            "time": time_tts,
+            "url": f"/api/audio/{speech_file}",
+        },
+    )
+
 
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
