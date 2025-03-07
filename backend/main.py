@@ -97,12 +97,12 @@ start = time.time()
 
 llm_models = {
     # "em_german_leo_mistral-Q4": LlamaModel("./models/llm/em_german_leo_mistral.Q4_K_M.gguf"),
-    "llama2-7b-Q4": LlamaModel("./models/llm/llama-2-7b-chat.Q4_K_M.gguf"),
+    # "llama2-7b-Q4": LlamaModel("./models/llm/llama-2-7b-chat.Q4_K_M.gguf"),
     "llama3-8b-Q4": LlamaModel("./models/llm/Meta-Llama-3-8B-Instruct-Q4_K_M.gguf"),
+    "phi-3": LlamaModel("./models/llm/Meta-Llama-3-8B-Instruct-Q4_K_M.gguf"),
 
     # "llama-3-8b-transformers": TransformersPipelineModel("meta-llama/Meta-Llama-3-8B-Instruct"),
     # "gemma-2-9b-it": TransformersPipelineModel("./models/llm/gemma-2-9b-it"),
-    # "phi-2": TransformersPipelineModel("./models/llm/phi-2"), phi doesn't provide a chat template
 }
 
 stt_models: dict[str, STT] = {

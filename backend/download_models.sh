@@ -15,14 +15,13 @@ huggingface-cli download TheBloke/em_german_leo_mistral-GGUF em_german_leo_mistr
 huggingface-cli download TheBloke/Llama-2-7B-Chat-GGUF llama-2-7b-chat.Q4_K_M.gguf --local-dir "$MODELS_DIR/llm/"
 # https://huggingface.co/bartowski/Meta-Llama-3-8B-Instruct-GGUF
 huggingface-cli download bartowski/Meta-Llama-3-8B-Instruct-GGUF Meta-Llama-3-8B-Instruct-Q4_K_M.gguf --local-dir "$MODELS_DIR/llm/"
+# https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf
+huggingface-cli download microsoft/Phi-3-mini-4k-instruct-gguf Phi-3-mini-4k-instruct-q4.gguf --local-dir "$MODELS_DIR/llm/"
+
 # huggingface-cli download meta-llama/Meta-Llama-3-8B-Instruct --local-dir "$MODELS_DIR/llm/"
 
 # https://huggingface.co/google/gemma-2-9b-it
 huggingface-cli download google/gemma-2-9b-it --local-dir "$MODELS_DIR/llm/gemma-2-9b-it"
-
-# https://huggingface.co/microsoft/phi-2
-huggingface-cli download microsoft/phi-2 --local-dir "$MODELS_DIR/llm/phi-2"
-
 
 ### TTS
 
