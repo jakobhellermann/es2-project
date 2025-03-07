@@ -43,22 +43,6 @@ class LlamaModel:
             # verbose = False,
         )
 
-    def eval(self, system_prompt: str, user_prompt: str) -> str:
-        prompt = f"{system_prompt} Q: {user_prompt} A: "
-
-        output = self.model(
-            prompt,
-            max_tokens=MAX_TOKENS,
-            stop=[
-                "Q:",
-                "\n",
-            ],
-        )
-
-        text = output["choices"][0]["text"]
-        text = text.removeprefix(prompt).strip().removeprefix("ASSISTANT:")
-        return text
-
     def eval(self, system_prompt: str, user_prompt: str) -> Iterable[str]:
         prompt = f"{system_prompt} Q: {user_prompt} A: "
 
