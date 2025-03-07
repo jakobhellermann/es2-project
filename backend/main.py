@@ -1,9 +1,10 @@
 from typing import Iterable
-from flask import Flask, request, send_from_directory
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from llama_cpp import Llama
-from transformers import pipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer, PreTrainedModel, PreTrainedTokenizer
+import threading
 import torch
 import time
 import os
@@ -25,13 +26,14 @@ app.config["CORS_HEADERS"] = "Content-Type"
 socketio = SocketIO(app,debug=True, cors_allowed_origins='*', async_mode="eventlet")
 
 USE_GPU = True
+MAX_TOKENS = None
 
 class LlamaModel:
     def __init__(self, model_path):
         self.model = Llama(
             model_path=model_path,
             n_gpu_layers = -1 if USE_GPU else None,
-            verbose = False,
+            # verbose = False,
         )
 
     def eval(self, system_prompt: str, user_prompt: str) -> str:
@@ -39,7 +41,7 @@ class LlamaModel:
 
         output = self.model(
             prompt,
-            max_tokens=None,
+            max_tokens=MAX_TOKENS,
             stop=[
                 "Q:",
                 "\n",
@@ -63,34 +65,34 @@ class LlamaModel:
         # return output["choices"][0]["text"]
         return map(lambda segment: segment["choices"][0]["text"], output)
 
-class TransformersPipelineModel:
+class TransformersModel:
+    tokenizer: PreTrainedTokenizer
+    model: PreTrainedModel
+
     def __init__(self, model_path):
-        self.pipeline = pipeline(
-            "text-generation",
-            model=model_path,
-            model_kwargs={"torch_dtype": torch.bfloat16},
-            device_map="auto",
-        )
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        self.model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype = torch.bfloat16)
     def eval(self, system_prompt: str, user_prompt: str):
         messages = [
-            #{"role": "system", "content": system_prompt},
+            # {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
+        tokenized_chat = self.tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True, return_tensors="pt")
 
-        terminators = [
-            self.pipeline.tokenizer.eos_token_id,
-            self.pipeline.tokenizer.convert_tokens_to_ids("<|eot_id|>")
-        ]
-
-        outputs = self.pipeline(
-            messages,
-            max_new_tokens=200,
-            eos_token_id=terminators,
-            do_sample=True,
-            temperature=0.6,
-            top_p=0.9,
+        streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True)
+        thread = threading.Thread(
+            target=self.model.generate,
+            args=(tokenized_chat,),
+            kwargs={
+                "streamer": streamer,
+                "max_new_tokens": MAX_TOKENS if MAX_TOKENS != None else 1000,
+                "do_sample": True,
+                "temperature": 0.8,
+                "top_p": 0.9,
+            }
         )
-        return [outputs[0]["generated_text"][-1]["content"]]
+        thread.start()
+        return streamer
 
 
 start = time.time()
@@ -99,9 +101,9 @@ llm_models = {
     # "em_german_leo_mistral-Q4": LlamaModel("./models/llm/em_german_leo_mistral.Q4_K_M.gguf"),
     # "llama2-7b-Q4": LlamaModel("./models/llm/llama-2-7b-chat.Q4_K_M.gguf"),
     "llama3-8b-Q4": LlamaModel("./models/llm/Meta-Llama-3-8B-Instruct-Q4_K_M.gguf"),
-    "phi-3": LlamaModel("./models/llm/Meta-Llama-3-8B-Instruct-Q4_K_M.gguf"),
+    "phi-3": LlamaModel("models/llm/Phi-3-mini-4k-instruct-q4.gguf"),
 
-    # "llama-3-8b-transformers": TransformersPipelineModel("meta-llama/Meta-Llama-3-8B-Instruct"),
+    # "llama-3-8b-transformers": TransformersModel("meta-llama/Meta-Llama-3-8B-Instruct"),
     # "gemma-2-9b-it": TransformersPipelineModel("./models/llm/gemma-2-9b-it"),
 }
 
@@ -144,11 +146,6 @@ def available_models():
         "llm": list(llm_models.keys()),
         "tts": list(tts_models.keys()),
     }
-
-@socketio.on("send_message_audio")
-def assistant_io(request):
-
-    print(request)
 
 @socketio.on("send_message")
 def assistant_io(request):
