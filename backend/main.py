@@ -33,6 +33,9 @@ socketio = SocketIO(app, debug=True, cors_allowed_origins="*", async_mode="event
 
 USE_GPU = True
 MAX_TOKENS = None
+TEMPERATURE = 0.8
+TOP_P = 0.95
+TOP_K = 40
 
 
 class LlamaModel:
@@ -44,17 +47,24 @@ class LlamaModel:
         )
 
     def eval(self, system_prompt: str, user_prompt: str) -> Iterable[str]:
-        prompt = f"{system_prompt} Q: {user_prompt} A: "
-
-        output = self.model(
-            prompt,
-            max_tokens=None,
-            stop=["Q:"],
+        output = self.model.create_chat_completion(
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_prompt,
+                },
+                {"role": "user", "content":user_prompt},
+            ],
             stream=True,
+            temperature=TEMPERATURE,
+            top_p=TOP_P,
+            top_k=TOP_K,
         )
 
-        # return output["choices"][0]["text"]
-        return map(lambda segment: segment["choices"][0]["text"], output)
+        for segment in output:
+            segment = segment["choices"][0]["delta"]
+            if "content" in segment:
+                yield segment["content"]
 
 
 class TransformersModel:
@@ -84,8 +94,9 @@ class TransformersModel:
                 "streamer": streamer,
                 "max_new_tokens": MAX_TOKENS if MAX_TOKENS != None else 1000,
                 "do_sample": True,
-                "temperature": 0.8,
-                "top_p": 0.9,
+                "temperature": TEMPERATURE,
+                "top_p": TOP_P,
+                "top_k": TOP_K,
             },
         )
         thread.start()
