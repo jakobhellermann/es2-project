@@ -53,7 +53,7 @@ class LlamaModel:
                     "role": "system",
                     "content": system_prompt,
                 },
-                {"role": "user", "content":user_prompt},
+                {"role": "user", "content": user_prompt},
             ],
             stream=True,
             temperature=TEMPERATURE,
@@ -222,7 +222,7 @@ def serve(path):
 
 
 def main():
-    socketio.run(app, debug=True, host="0.0.0.0", port=8080)
+    socketio.run(app, debug=False, host="0.0.0.0", port=8080)
 
 
 if __name__ == "__main__":
