@@ -1,9 +1,16 @@
 from typing import Iterable
-from flask import Flask, request, send_from_directory
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
 from llama_cpp import Llama
-from transformers import pipeline
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    TextIteratorStreamer,
+    PreTrainedModel,
+    PreTrainedTokenizer,
+)
+import threading
 import torch
 import time
 import os
@@ -22,90 +29,89 @@ app.json.ensure_ascii = False
 cors = CORS(app)
 app.config["CORS_HEADERS"] = "Content-Type"
 
-socketio = SocketIO(app,debug=True, cors_allowed_origins='*', async_mode="eventlet")
+socketio = SocketIO(app, debug=True, cors_allowed_origins="*", async_mode="eventlet")
 
 USE_GPU = True
+MAX_TOKENS = None
+TEMPERATURE = 0.8
+TOP_P = 0.95
+TOP_K = 40
+
 
 class LlamaModel:
     def __init__(self, model_path):
         self.model = Llama(
             model_path=model_path,
-            n_gpu_layers = -1 if USE_GPU else None,
-            verbose = False,
+            n_gpu_layers=-1 if USE_GPU else None,
+            # verbose = False,
         )
 
-    def eval(self, system_prompt: str, user_prompt: str) -> str:
-        prompt = f"{system_prompt} Q: {user_prompt} A: "
-
-        output = self.model(
-            prompt,
-            max_tokens=None,
-            stop=[
-                "Q:",
-                "\n",
-            ],
-        )
-
-        text = output["choices"][0]["text"]
-        text = text.removeprefix(prompt).strip().removeprefix("ASSISTANT:")
-        return text
-    
     def eval(self, system_prompt: str, user_prompt: str) -> Iterable[str]:
-        prompt = f"{system_prompt} Q: {user_prompt} A: "
-
-        output = self.model(
-            prompt,
-            max_tokens=None,
-            stop=[
-                "Q:",
-                "\n",
+        output = self.model.create_chat_completion(
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_prompt,
+                },
+                {"role": "user", "content":user_prompt},
             ],
             stream=True,
+            temperature=TEMPERATURE,
+            top_p=TOP_P,
+            top_k=TOP_K,
         )
 
-        # text = output["choices"][0]["text"]
-        return map(lambda segment: segment["choices"][0]["text"], output)
+        for segment in output:
+            segment = segment["choices"][0]["delta"]
+            if "content" in segment:
+                yield segment["content"]
 
-class TransformersPipelineModel:
+
+class TransformersModel:
+    tokenizer: PreTrainedTokenizer
+    model: PreTrainedModel
+
     def __init__(self, model_path):
-        self.pipeline = pipeline(
-            "text-generation",
-            model=model_path,
-            model_kwargs={"torch_dtype": torch.bfloat16},
-            device_map="auto",
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_path, torch_dtype=torch.bfloat16
         )
+
     def eval(self, system_prompt: str, user_prompt: str):
         messages = [
-            #{"role": "system", "content": system_prompt},
+            # {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
-
-        terminators = [
-            self.pipeline.tokenizer.eos_token_id,
-            self.pipeline.tokenizer.convert_tokens_to_ids("<|eot_id|>")
-        ]
-
-        outputs = self.pipeline(
-            messages,
-            max_new_tokens=200,
-            eos_token_id=terminators,
-            do_sample=True,
-            temperature=0.6,
-            top_p=0.9,
+        tokenized_chat = self.tokenizer.apply_chat_template(
+            messages, tokenize=True, add_generation_prompt=True, return_tensors="pt"
         )
-        return [outputs[0]["generated_text"][-1]["content"]]
+
+        streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True)
+        thread = threading.Thread(
+            target=self.model.generate,
+            args=(tokenized_chat,),
+            kwargs={
+                "streamer": streamer,
+                "max_new_tokens": MAX_TOKENS if MAX_TOKENS != None else 1000,
+                "do_sample": True,
+                "temperature": TEMPERATURE,
+                "top_p": TOP_P,
+                "top_k": TOP_K,
+            },
+        )
+        thread.start()
+        return streamer
 
 
 start = time.time()
 
 llm_models = {
-    "llama3-8b-Q4": LlamaModel("./models/llm/Meta-Llama-3-8B-Instruct-Q4_K_M.gguf"),
     # "em_german_leo_mistral-Q4": LlamaModel("./models/llm/em_german_leo_mistral.Q4_K_M.gguf"),
-    # "llama2-7b-Q4": LlamaModel("./models/llm/llama-2-7b.Q4_K_M.gguf"),
-
-    # "llama-3-8b-transformers": TransformersPipelineModel("meta-llama/Meta-Llama-3-8B-Instruct"),
+    # "llama2-7b-Q4": LlamaModel("./models/llm/llama-2-7b-chat.Q4_K_M.gguf"),
+    "llama3-8b-Q4": LlamaModel("./models/llm/Meta-Llama-3-8B-Instruct-Q4_K_M.gguf"),
+    "phi-3": LlamaModel("models/llm/Phi-3-mini-4k-instruct-q4.gguf"),
+    # "llama-3-8b-transformers": TransformersModel("meta-llama/Meta-Llama-3-8B-Instruct"),
     # "gemma-2-9b-it": TransformersPipelineModel("./models/llm/gemma-2-9b-it"),
-    # "phi-2": TransformersPipelineModel("./models/llm/phi-2"), phi doesn't provide a chat template
 }
 
 stt_models: dict[str, STT] = {
@@ -113,16 +119,21 @@ stt_models: dict[str, STT] = {
 }
 
 tts_models: dict[str, TTS] = {
-    "piper": PiperTTS(
-        model="./models/tts/piper/de_DE-thorsten-medium.onnx",
-        config="./models/tts/piper/de_DE-thorsten-medium.onnx.json",
+    "piper-thorsten": PiperTTS(
+        model="models/tts/piper/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx",
+        config="models/tts/piper/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx.json",
+    ),
+    "piper-eva": PiperTTS(
+        model="models/tts/piper/de/de_DE/eva_k/x_low/de_DE-eva_k-x_low.onnx",
+        config="models/tts/piper/de/de_DE/eva_k/x_low/de_DE-eva_k-x_low.onnx.json",
     ),
     "facebook_mms-deu": VitsTTS(model="./models/tts/facebook_mms-tts-deu"),
 }
 
 end = time.time()
 
-print(f"Load time: {end-start}")
+print(f"Load time: {end - start}")
+
 
 def time_function(f):
     start = time.time()
@@ -144,10 +155,6 @@ def available_models():
         "tts": list(tts_models.keys()),
     }
 
-@socketio.on("send_message_audio")
-def assistant_io(request):
-
-    print(request)
 
 @socketio.on("send_message")
 def assistant_io(request):
@@ -155,8 +162,10 @@ def assistant_io(request):
     input_audio = request.get("audio")
 
     match (input_text, input_audio):
-        case (None, None): raise Exception("400")
-        case (a, b) if a != None and b != None: raise Exception("400")
+        case (None, None):
+            raise Exception("400")
+        case (a, b) if a != None and b != None:
+            raise Exception("400")
 
     stt_model_name = request["stt_model"]
     if input_audio:
@@ -168,7 +177,7 @@ def assistant_io(request):
         input_text, time_stt = time_function(
             lambda: stt_model.speech_to_text(input_audio)
         )
-        emit("response_stt_finished", { "time": time_stt, "transcription": input_text })
+        emit("response_stt_finished", {"time": time_stt, "transcription": input_text})
 
     llm_model_name = request.get("llm_model", next(iter(llm_models)))
     if llm_model_name not in llm_models:
@@ -187,19 +196,21 @@ def assistant_io(request):
     result_text = ""
     for segment in llm_stream:
         result_text += segment
-        print(segment, end = "", flush=True)
-        emit('response_llm_update', { "segment": segment })
+        print(segment, end="", flush=True)
+        emit("response_llm_update", {"segment": segment})
         socketio.sleep(0)
     llm_eval_time = time.time() - llm_eval_start
-    emit('response_llm_finished', {
-        "time": llm_eval_time
-    })
+    emit("response_llm_finished", {"time": llm_eval_time})
 
     speech_file, time_tts = time_function(lambda: tts_model.text_to_speech(result_text))
-    emit('response_tts_finished', {
-        "time": time_tts,
-        "url": f"/api/audio/{speech_file}",
-    })
+    emit(
+        "response_tts_finished",
+        {
+            "time": time_tts,
+            "url": f"/api/audio/{speech_file}",
+        },
+    )
+
 
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")

@@ -6,7 +6,8 @@ import tempfile
 class AutomaticSpeechRecognitionPipeline(STT):
     def __init__(self, model: str):
         self.model = pipeline(
-            "automatic-speech-recognition", model,
+            "automatic-speech-recognition",
+            model,
         )
 
     def speech_to_text(self, speech: bytes) -> str:

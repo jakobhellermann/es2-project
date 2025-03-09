@@ -60,9 +60,9 @@ export class ChatComponent implements OnInit, OnDestroy {
   private loading: boolean = false;
 
   private modelConfig: ModelConfig = {
-    stt_model: 'whisper',
-    llm_model: 'mistral',
-    tts_model: 'facebook-tts'
+    stt_model: '',
+    llm_model: '',
+    tts_model: '',
   };
 
   constructor(private botService: BotService, private audioService: AudioService, private botConfig: BotConfigService) {

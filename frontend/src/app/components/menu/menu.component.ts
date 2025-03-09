@@ -22,9 +22,9 @@ export class MenuComponent implements OnInit {
   @Output() viewMode = new EventEmitter<string>()
 
   protected modelGroup = new FormGroup({
-    stt_model: new FormControl<string>('whisper'),
-    llm_model: new FormControl<string>('mistral'),
-    tts_model: new FormControl<string>('facebook-tts'),
+    stt_model: new FormControl<string>(''),
+    llm_model: new FormControl<string>(''),
+    tts_model: new FormControl<string>(''),
   })
   protected radioControl = new FormControl('single')
   protected autoPlay = new FormControl('autoPlay')
