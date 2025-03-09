@@ -141,16 +141,24 @@ export class ChatComponent implements OnInit, OnDestroy {
     last.telemetry.tts = `${res.time.toFixed(2)}s`;
 
     if (this.isSelected && this.audioService.isAutoPlayEnabled()) {
-      last.playing = true
-      this.audioElement.nativeElement.onended = () => { last.playing = false }
-      this.audioService.playAudio(res.url, this.audioElement);
+      this.playAudio(last)
     }
   }
 
   protected onPlayAudio(message: MessageType) {
-    message.playing = true
+    if (message.playing) {
+      this.audioElement.nativeElement.pause()
+      return
+    }
+
+    this.playAudio(message)
+  }
+
+  private playAudio(message: MessageType) {
     if (message.url) {
+      message.playing = true
       this.audioElement.nativeElement.onended = () => { message.playing = false }
+      this.audioElement.nativeElement.onpause = () => { message.playing = false }
       this.audioService.playAudio(message.url, this.audioElement);
     }
   }
