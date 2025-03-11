@@ -91,7 +91,7 @@ export class ChatComponent implements OnInit, OnDestroy {
       this.insert(prompt);
 
       this.insert('', false, true);
-      this.botService.sendMessage(this.socket, prompt, this.modelConfig);
+      this.sendMessage(prompt);
     })).subscribe();
 
     this.botConfig.config(this.index).pipe(tap((config) => {
@@ -112,6 +112,12 @@ export class ChatComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.botConfig.unregisterPrompt(this.promptId);
+  }
+
+  private sendMessage(prompt: string) {
+    const context = this.messages.reduce((acc, current) => acc + current.message, '') + prompt
+
+    this.botService.sendMessage(this.socket, context, this.modelConfig)
   }
 
   private onSTTFinished(res: TimedResponse<{ transcription: string; }>) {
