@@ -1,4 +1,4 @@
-import {Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild} from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { AsyncPipe, NgClass, NgForOf, NgIf } from "@angular/common";
 import { NgbTooltip } from "@ng-bootstrap/ng-bootstrap";
 import { ReactiveFormsModule } from "@angular/forms";
@@ -7,12 +7,13 @@ import { BotService, ModelConfig, ResponseUpdate, TimedResponse } from "../../se
 import { AudioService } from "../../service/audio.service";
 import { BotConfigService } from "../../service/bot-config.service";
 import { marked } from "marked";
-import {io, Socket} from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 import * as Rx from "rxjs";
-import {NgxBootstrapIconsModule} from "ngx-bootstrap-icons";
+import { NgxBootstrapIconsModule } from "ngx-bootstrap-icons";
 
 type MessageType = {
   message: string,
+  messageFormatted: string,
   reply: boolean,
   loading: boolean,
   url: string | null,
@@ -47,10 +48,10 @@ export class ChatComponent implements OnInit, OnDestroy {
   @Output() onResponseEvent = new EventEmitter<string>();
 
   private socket: Socket;
-  private stt_finished: Observable<TimedResponse<{transcription: string}>>;
+  private stt_finished: Observable<TimedResponse<{ transcription: string; }>>;
   private llmUpdate: Observable<ResponseUpdate>;
   private llmFinished: Observable<TimedResponse>;
-  private ttsFinished: Observable<TimedResponse<{url: string}>>;
+  private ttsFinished: Observable<TimedResponse<{ url: string; }>>;
 
   private readonly promptId: number;
   private messages: MessageType[] = [];
@@ -75,10 +76,10 @@ export class ChatComponent implements OnInit, OnDestroy {
     this.llmFinished = Rx.fromEvent(this.socket, "response_llm_finished");
     this.ttsFinished = Rx.fromEvent(this.socket, "response_tts_finished");
 
-    this.stt_finished.subscribe(this.onSTTFinished.bind(this))
-    this.llmUpdate.subscribe(this.onLLMUpdate.bind(this))
-    this.llmFinished.subscribe(this.onLLMFinished.bind(this))
-    this.ttsFinished.subscribe(this.onTTSFinished.bind(this))
+    this.stt_finished.subscribe(this.onSTTFinished.bind(this));
+    this.llmUpdate.subscribe(this.onLLMUpdate.bind(this));
+    this.llmFinished.subscribe(this.onLLMFinished.bind(this));
+    this.ttsFinished.subscribe(this.onTTSFinished.bind(this));
   }
 
   ngOnInit() {
@@ -87,11 +88,12 @@ export class ChatComponent implements OnInit, OnDestroy {
         return;
       }
 
+      this.sendMessage(prompt);
+
       this.loading = true;
       this.insert(prompt);
 
       this.insert('', false, true);
-      this.sendMessage(prompt);
     })).subscribe();
 
     this.botConfig.config(this.index).pipe(tap((config) => {
@@ -103,10 +105,14 @@ export class ChatComponent implements OnInit, OnDestroy {
         return;
       }
 
+      const context = this.messages
+        .filter(msg => msg.message.length > 0)
+        .map(message => ({ message: message.message, reply: message.reply }));
+
       this.loading = true;
       this.insert('', true);
 
-      this.botService.sendAudioFile(this.socket, blob, this.modelConfig);
+      this.botService.sendAudioFile(this.socket, blob, context, this.modelConfig);
     })).subscribe();
   }
 
@@ -115,9 +121,10 @@ export class ChatComponent implements OnInit, OnDestroy {
   }
 
   private sendMessage(prompt: string) {
-    const context = this.messages.reduce((acc, current) => acc + current.message, '') + prompt
-
-    this.botService.sendMessage(this.socket, context, this.modelConfig)
+    const context = this.messages
+      .filter(msg => msg.message.length > 0)
+      .map(message => ({ message: message.message, reply: message.reply }));
+    this.botService.sendMessage(this.socket, prompt, context, this.modelConfig);
   }
 
   private onSTTFinished(res: TimedResponse<{ transcription: string; }>) {
@@ -129,8 +136,9 @@ export class ChatComponent implements OnInit, OnDestroy {
     responseMessage.telemetry.stt = `${res.time.toFixed(2)}s`;
   }
   private onLLMUpdate(res: ResponseUpdate) {
-    console.log(".. " + res.segment);
-    this.lastMessage().message += res.segment;
+    let lastMessage = this.lastMessage();
+    lastMessage.message += res.segment;
+    lastMessage.messageFormatted = lastMessage.message;
   }
   private async onLLMFinished(res: TimedResponse) {
     this.loading = false;
@@ -139,7 +147,7 @@ export class ChatComponent implements OnInit, OnDestroy {
     last.telemetry.llm = `${res.time.toFixed(2)}s`;
     last.loading = false;
 
-    last.message = await marked.parse(last.message);
+    last.messageFormatted = await marked.parse(last.message);
   }
   private onTTSFinished(res: TimedResponse<{ url: string; }>) {
     let last = this.lastMessage();
@@ -147,24 +155,24 @@ export class ChatComponent implements OnInit, OnDestroy {
     last.telemetry.tts = `${res.time.toFixed(2)}s`;
 
     if (this.isSelected && this.audioService.isAutoPlayEnabled()) {
-      this.playAudio(last)
+      this.playAudio(last);
     }
   }
 
   protected onPlayAudio(message: MessageType) {
     if (message.playing) {
-      this.audioElement.nativeElement.pause()
-      return
+      this.audioElement.nativeElement.pause();
+      return;
     }
 
-    this.playAudio(message)
+    this.playAudio(message);
   }
 
   private playAudio(message: MessageType) {
     if (message.url) {
-      message.playing = true
-      this.audioElement.nativeElement.onended = () => { message.playing = false }
-      this.audioElement.nativeElement.onpause = () => { message.playing = false }
+      message.playing = true;
+      this.audioElement.nativeElement.onended = () => { message.playing = false; };
+      this.audioElement.nativeElement.onpause = () => { message.playing = false; };
       this.audioService.playAudio(message.url, this.audioElement);
     }
   }
@@ -172,6 +180,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   private insert(text: string, loading: boolean = false, reply: boolean = false): MessageType {
     let message = {
       message: text,
+      messageFormatted: text,
       reply,
       telemetry: {},
       loading,
