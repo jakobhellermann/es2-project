@@ -1,4 +1,8 @@
-<div class="flex-fill d-flex flex-column gap-2 p-3 h-100">
+<div
+  class="flex-fill d-flex flex-column gap-2 p-3 h-100 overflow-y-scroll"
+  #scrollContainer
+  [scrollTop]="scrollContainer.scrollHeight"
+>
   <audio #audioElement controls hidden></audio>
   <div
     class="message"
