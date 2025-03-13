@@ -43,18 +43,33 @@ class LlamaModel:
         self.model = Llama(
             model_path=model_path,
             n_gpu_layers=-1 if USE_GPU else None,
+            n_ctx=2048,
             # verbose = False,
         )
 
-    def eval(self, system_prompt: str, user_prompt: str) -> Iterable[str]:
-        output = self.model.create_chat_completion(
-            messages=[
+    def eval(
+        self, system_prompt: str, user_prompt: str, context: list
+    ) -> Iterable[str]:
+        messages = [
+            {
+                "role": "system",
+                "content": system_prompt,
+            },
+        ]
+        for c in context:
+            messages.append(
                 {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {"role": "user", "content":user_prompt},
-            ],
+                    "role": "system" if c["reply"] else "user",
+                    "content": c["message"],
+                }
+            )
+        messages.append(
+            {"role": "user", "content": user_prompt},
+        )
+        print(messages)
+
+        output = self.model.create_chat_completion(
+            messages=messages,
             stream=True,
             temperature=TEMPERATURE,
             top_p=TOP_P,
@@ -77,7 +92,7 @@ class TransformersModel:
             model_path, torch_dtype=torch.bfloat16
         )
 
-    def eval(self, system_prompt: str, user_prompt: str):
+    def eval(self, system_prompt: str, user_prompt: str, context):
         messages = [
             # {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -92,7 +107,7 @@ class TransformersModel:
             args=(tokenized_chat,),
             kwargs={
                 "streamer": streamer,
-                "max_new_tokens": MAX_TOKENS if MAX_TOKENS != None else 1000,
+                "max_new_tokens": MAX_TOKENS if MAX_TOKENS != None else 30,
                 "do_sample": True,
                 "temperature": TEMPERATURE,
                 "top_p": TOP_P,
@@ -111,7 +126,7 @@ llm_models = {
     "llama3-8b-Q4": LlamaModel("./models/llm/Meta-Llama-3-8B-Instruct-Q4_K_M.gguf"),
     "phi-3": LlamaModel("models/llm/Phi-3-mini-4k-instruct-q4.gguf"),
     # "llama-3-8b-transformers": TransformersModel("meta-llama/Meta-Llama-3-8B-Instruct"),
-    # "gemma-2-9b-it": TransformersPipelineModel("./models/llm/gemma-2-9b-it"),
+    "gemma-2-9b-it": TransformersModel("./models/llm/gemma-2-9b-it"),
 }
 
 stt_models: dict[str, STT] = {
@@ -159,6 +174,7 @@ def available_models():
 @socketio.on("send_message")
 def assistant_io(request):
     input_text = request.get("text")
+    context = request.get("context")
     input_audio = request.get("audio")
 
     match (input_text, input_audio):
@@ -192,7 +208,7 @@ def assistant_io(request):
     print(f"Using models llm={llm_model_name} tts={tts_model_name}")
 
     llm_eval_start = time.time()
-    llm_stream = llm_model.eval(system_prompt, input_text)
+    llm_stream = llm_model.eval(system_prompt, input_text, context)
     result_text = ""
     for segment in llm_stream:
         result_text += segment
@@ -222,7 +238,7 @@ def serve(path):
 
 
 def main():
-    socketio.run(app, debug=True, host="0.0.0.0", port=8080)
+    socketio.run(app, debug=False, host="0.0.0.0", port=8080)
 
 
 if __name__ == "__main__":
